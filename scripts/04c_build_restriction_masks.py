@@ -1,0 +1,186 @@
+"""
+04c — Build & apply protected/restricted-area masks  (real engine, upgrade of 02b).
+
+WHAT IT DOES
+    Loads every restriction layer present under data/raw/restrictions/<folder>/
+    (folders + hard/soft flags from config.restrictions.layers), cleans + reprojects
+    to EPSG:3067, unions them, and intersects with the Step-1 open cells to flag which
+    "Tukes-open" cells are actually blocked by Natura 2000 / protected areas / national
+    parks / Sámi Homeland / water bodies, etc.
+
+    It does NOT invent data. If a layer's folder is empty it is skipped and listed in a
+    manual download checklist (data/outputs/RESTRICTION_DOWNLOAD_CHECKLIST.md). With no
+    layers present the run still succeeds: every cell stays "open (Tukes-only)" and the
+    report makes clear restrictions are not yet applied.
+
+OUTPUTS
+    data/processed/restriction_masks.gpkg              (all loaded restriction polygons)
+    data/outputs/open_cells_after_restrictions.gpkg    (open cells with hard overlap ≤ thr)
+    data/outputs/restricted_cells.gpkg                 (open cells blocked by hard restrictions)
+    data/outputs/cell_restriction_status.csv           (per-cell restriction overlap + flag)
+    data/outputs/RESTRICTION_DOWNLOAD_CHECKLIST.md      (what is still missing + sources)
+
+HARD vs SOFT: only `hard: true` layers exclude ground. Soft layers (urban, reindeer,
+zoning) are measured and reported but do not by themselves mark a cell restricted.
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import geopandas as gpd
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import PROJECT_CRS, get_logger, get_path, load_config  # noqa: E402
+
+log = get_logger("04c_restrictions")
+
+VECTOR_EXTS = ("gpkg", "shp", "geojson", "json")
+
+# Exact-source guidance for the checklist (kept in sync with the shopping list doc).
+SOURCE_HINTS = {
+    "natura2000": "SYKE / EEA — https://www.eea.europa.eu/data-and-maps/data/natura-13 (FI subset via SYKE ckan.ymparisto.fi)",
+    "protected_areas": "SYKE / Metsähallitus — https://ckan.ymparisto.fi (Suojelualueet)",
+    "national_parks": "Metsähallitus — https://www.metsa.fi/en/maps-and-open-data/",
+    "wilderness_areas": "Metsähallitus / SYKE — erämaa-alueet",
+    "sami_homeland": "Sámediggi / statutory boundary (Enontekiö, Inari, Utsjoki, N Sodankylä)",
+    "water_bodies": "NLS/MML topographic DB or SYKE Ranta10 — https://www.maanmittauslaitos.fi",
+    "urban_infrastructure": "NLS/MML topographic DB; or SYKE CORINE land cover",
+    "reindeer_herding": "Paliskuntain yhdistys — https://paliskunnat.fi",
+    "landuse_zoning": "Regional councils (Lapin liitto) / SYKE Liiteri — https://liiteri.ymparisto.fi",
+}
+
+
+def load_folder(folder: Path, crs: str) -> gpd.GeoDataFrame | None:
+    """Load + clean every vector file in a restriction folder; return one GeoDataFrame."""
+    files = []
+    for ext in VECTOR_EXTS:
+        files += sorted(folder.rglob(f"*.{ext}"))
+    if not files:
+        return None
+    parts = []
+    for f in files:
+        try:
+            g = gpd.read_file(f)
+        except Exception as exc:  # noqa: BLE001
+            log.error("Could not read %s: %s", f.name, exc)
+            continue
+        if g.empty:
+            continue
+        if g.crs is None:
+            log.warning("%s has no CRS — assuming %s", f.name, crs)
+            g = g.set_crs(crs, allow_override=True)
+        g = g.to_crs(crs)
+        g = g[g.geometry.notna() & ~g.geometry.is_empty]
+        inv = ~g.geometry.is_valid
+        if inv.any():
+            g.loc[inv, g.geometry.name] = g.loc[inv, g.geometry.name].make_valid()
+        g = g[g.geometry.geom_type.isin(("Polygon", "MultiPolygon"))]
+        if not g.empty:
+            parts.append(g[[g.geometry.name]])
+    if not parts:
+        return None
+    return gpd.GeoDataFrame(pd.concat(parts, ignore_index=True), crs=crs)
+
+
+def main() -> int:
+    cfg = load_config()
+    crs = cfg["project"].get("crs", PROJECT_CRS)
+    restr_dir = get_path(cfg, "restrictions", create=True)
+    processed = get_path(cfg, "processed", create=True)
+    outputs = get_path(cfg, "outputs", create=True)
+    thr = float(cfg["restrictions"].get("restricted_max_open_pct", 1.0))
+
+    # --- Load each configured restriction layer ---
+    loaded, missing = [], []
+    mask_parts = []
+    for spec in cfg["restrictions"]["layers"]:
+        folder = restr_dir / spec["folder"]
+        gdf = load_folder(folder, crs) if folder.exists() else None
+        if gdf is None or gdf.empty:
+            missing.append(spec)
+            continue
+        gdf = gdf.copy()
+        gdf["restriction_label"] = spec["label"]
+        gdf["restriction_folder"] = spec["folder"]
+        gdf["is_hard"] = bool(spec["hard"])
+        mask_parts.append(gdf)
+        loaded.append((spec, len(gdf)))
+        log.info("Loaded restriction '%s': %d polygons", spec["label"], len(gdf))
+
+    # --- Write the checklist for whatever is missing ---
+    cl = ["# Restriction download checklist (auto-generated by 04c)", "",
+          f"Place vector data under `data/raw/restrictions/<folder>/`. Threshold: a cell",
+          f"is 'restricted' when HARD-restriction overlap exceeds {thr}%.", ""]
+    if loaded:
+        cl += ["## Present", ""]
+        cl += [f"- ✅ `{s['folder']}` ({s['label']}): {n} polygons" for s, n in loaded] + [""]
+    cl += ["## Still missing", ""]
+    for spec in missing:
+        cl.append(f"- ⬜ `{spec['folder']}` ({spec['label']}, "
+                  f"{'HARD' if spec['hard'] else 'soft'}) — {SOURCE_HINTS.get(spec['folder'], 'see docs/RESTRICTION_DATA_SHOPPING_LIST.md')}")
+    cl += ["", "See `docs/RESTRICTION_DATA_SHOPPING_LIST.md` for full source/format detail.", ""]
+    (outputs / "RESTRICTION_DOWNLOAD_CHECKLIST.md").write_text("\n".join(cl), encoding="utf-8")
+
+    # --- Combine into restriction_masks.gpkg ---
+    if mask_parts:
+        masks = gpd.GeoDataFrame(pd.concat(mask_parts, ignore_index=True), crs=crs)
+        masks.to_file(processed / "restriction_masks.gpkg", layer="restriction_masks", driver="GPKG")
+        log.info("Wrote restriction_masks.gpkg (%d polygons, %d layers)",
+                 len(masks), len(loaded))
+    else:
+        masks = None
+        log.warning("=" * 70)
+        log.warning("NO restriction layers present — restriction masking NOT applied.")
+        log.warning("Every 'open' cell remains Tukes-cadastre-only (NOT confirmed open).")
+        log.warning("See data/outputs/RESTRICTION_DOWNLOAD_CHECKLIST.md (%d layers missing).",
+                    len(missing))
+        log.warning("=" * 70)
+
+    # --- Apply to the Step-1 open cells ---
+    base_path = outputs / "open_cells_conservative.gpkg"
+    if not base_path.exists():
+        base_path = outputs / "open_cells.gpkg"
+    if not base_path.exists():
+        log.error("No open-cells file to apply restrictions to (run 02/02c first).")
+        return 2
+    base = gpd.read_file(base_path)
+
+    if masks is not None:
+        hard = masks[masks["is_hard"]]
+        hpoly = hard.geometry.union_all() if not hard.empty else None
+        def overlap_pct(geom):
+            if hpoly is None or geom.area == 0:
+                return 0.0
+            return round(geom.intersection(hpoly).area / geom.area * 100, 4)
+        base["restriction_overlap_pct"] = base.geometry.apply(overlap_pct)
+    else:
+        base["restriction_overlap_pct"] = 0.0
+
+    base["is_restricted"] = base["restriction_overlap_pct"] > thr
+    open_after = base[~base["is_restricted"]].copy()
+    restricted = base[base["is_restricted"]].copy()
+
+    open_after.to_file(outputs / "open_cells_after_restrictions.gpkg",
+                       layer="open_cells_after_restrictions", driver="GPKG")
+    if restricted.empty:
+        gpd.GeoDataFrame(restricted, crs=base.crs).to_file(
+            outputs / "restricted_cells.gpkg", layer="restricted_cells", driver="GPKG")
+    else:
+        restricted.to_file(outputs / "restricted_cells.gpkg",
+                          layer="restricted_cells", driver="GPKG")
+    keep = [c for c in ["cell_id", "centroid_x", "centroid_y", "taken_overlap_pct",
+                        "is_clean_open", "restriction_overlap_pct", "is_restricted"]
+            if c in base.columns]
+    base[keep].to_csv(outputs / "cell_restriction_status.csv", index=False)
+
+    log.info("Applied restrictions to %d open cells: %d remain open, %d restricted.",
+             len(base), len(open_after), len(restricted))
+    if masks is None:
+        log.info("(0 restricted because no restriction data is present yet.)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

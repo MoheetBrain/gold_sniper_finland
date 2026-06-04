@@ -91,3 +91,80 @@ legal_status:
 demo_rank:
   random_seed: 42            # reproducible fake scores
   top_n_in_summary: 20
+
+# =============================================================================
+# STEP 1.5 — shrink & harden the search space
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Central Lapland Greenstone Belt (CLGB) clipping (script 04b).
+#
+# PREFERRED: real GTK bedrock geology. Drop a polygon layer at `gtk_bedrock_path`
+# and set the lithology field + greenstone keywords; 04b will dissolve the matching
+# polygons into the CLGB clip.
+#
+# FALLBACK (no GTK data yet): an APPROXIMATE manual envelope polygon (EPSG:3067)
+# around the Kittilä–Sirkka–Kiistala–Sodankylä gold corridor. This is NOT a
+# geological boundary — it is a coarse geographic swath to trim obvious basement
+# corners off the bounding box. Replace it with real GTK greenstone polygons before
+# Step 2 modelling. Vertices are [easting, northing] in metres, in order.
+# -----------------------------------------------------------------------------
+clgb:
+  gtk_bedrock_path: data/raw/gtk/bedrock_geology.gpkg   # supply this for the real clip
+  greenstone_field: ""        # e.g. "ROCK_NAME" / "lithology" — set when GTK data present
+  greenstone_keywords:        # case-insensitive substrings selecting greenstone lithologies
+    - greenstone
+    - metavolcan
+    - mafic volcan
+    - komatiite
+    - tholeiit
+    - amphibolite
+    - metabasalt
+  # Approximate manual envelope (used ONLY if the GTK bedrock file is absent).
+  manual_envelope_3067:
+    - [362000, 7505000]
+    - [362000, 7575000]
+    - [430000, 7610000]
+    - [505000, 7575000]
+    - [505000, 7498000]
+    - [430000, 7470000]
+  # Keep a grid cell if its centroid falls inside the CLGB polygon.
+  keep_rule: centroid_within
+
+# -----------------------------------------------------------------------------
+# Finer modelling grids (scripts 04b / 04). 5 km stays the regional overview.
+# -----------------------------------------------------------------------------
+grids:
+  regional_overview_m: 5000   # existing aoi_grid
+  regional_rank_m: 2000       # 2 km — regional ranking
+  target_detail_m: 1000       # 1 km — target-memo detail
+
+# -----------------------------------------------------------------------------
+# Restriction masks (script 04c). Each entry: a subfolder under data/raw/restrictions/
+# and whether it is a HARD exclusion. 04c loads any vector files found inside, unions
+# them, and intersects with the grid. Missing folders are reported, never invented.
+# -----------------------------------------------------------------------------
+restrictions:
+  # priority order matters for reporting
+  layers:
+    - {folder: natura2000,          hard: true,  label: "Natura 2000"}
+    - {folder: protected_areas,     hard: true,  label: "Protected areas"}
+    - {folder: national_parks,      hard: true,  label: "National parks"}
+    - {folder: wilderness_areas,    hard: true,  label: "Wilderness areas"}
+    - {folder: sami_homeland,       hard: true,  label: "Sámi Homeland"}
+    - {folder: water_bodies,        hard: true,  label: "Water bodies / lakes"}
+    - {folder: urban_infrastructure, hard: false, label: "Urban / infrastructure"}
+    - {folder: reindeer_herding,    hard: false, label: "Reindeer herding"}
+    - {folder: landuse_zoning,      hard: false, label: "Land-use / zoning"}
+  # A cell is "restricted" if hard-restriction overlap exceeds this %.
+  restricted_max_open_pct: 1.0
+
+# -----------------------------------------------------------------------------
+# Gold-panning (kullanhuuhdonta) scenarios (script run_step1_5).
+#   A: exclude ALL Tukes rights, including gold-panning (placer) permits.
+#   B: exclude exploration/mining/claim/reservation rights, but NOT gold-panning
+#      (report gold-panning separately — it is placer, not hard-rock).
+# This is a modelling choice, NOT a legal decision. Both are produced.
+# -----------------------------------------------------------------------------
+gold_panning:
+  layer_stem: kullanhuuhdonta

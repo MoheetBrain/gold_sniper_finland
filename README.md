@@ -154,6 +154,27 @@ Project_Architecture.txt     # the full multi-step vision (Step 1 → commercial
 
 ---
 
+## Step 1.5 — shrink & harden the search space
+
+Before Step 2, `python scripts/run_step1_5.py` refines the Tukes-open map into a
+tighter, geology-relevant search grid:
+
+- `04b_refine_aoi_to_clgb.py` — clips the AOI to the Central Lapland Greenstone Belt
+  (real GTK bedrock if `data/raw/gtk/bedrock_geology.gpkg` is supplied, else a clearly
+  labelled **approximate manual envelope**) and builds 2 km + 1 km grids with lat/lon.
+- `04c_build_restriction_masks.py` — a real masking engine that applies any restriction
+  layers found under `data/raw/restrictions/` (Natura 2000, protected areas, Sámi
+  Homeland, water…) and writes a download checklist for what's missing.
+- `04_cluster_open_cells.py` — now parameterised by grid + mask mode; clusters
+  clean-open ground with distance-to-active/pending-right and restriction overlap.
+- `run_step1_5.py` — runs gold-panning **Scenario A vs B**, clusters across
+  2 km/1 km × mask modes, and writes `data/outputs/STEP1_5_DECISION_REPORT.md`.
+
+These outputs are **legal/geographic candidate clusters / modelling candidates — NOT
+gold targets.** Gold targets only exist after Step 2 multi-layer feature convergence.
+Foundation models (TerraMind/Clay/Prithvi/…) are deliberately deferred — see
+`docs/GEOFOUNDATION_MODELS_LATER.md`.
+
 ## What's needed for Step 2
 
 Step 2 adds real geology + ML scoring. It needs GTK bedrock geology, known
