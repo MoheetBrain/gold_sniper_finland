@@ -25,6 +25,7 @@ dependencies:
   - pandas
   - numpy
   - scipy
+  - pyarrow        # parquet feature stacks (Step 2)
   # --- ML ---
   - scikit-learn
   - xgboost

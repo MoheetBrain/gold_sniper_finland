@@ -168,3 +168,90 @@ restrictions:
 # -----------------------------------------------------------------------------
 gold_panning:
   layer_stem: kullanhuuhdonta
+
+# =============================================================================
+# STEP 2 — minimal source-grounded geology modelling
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# GTK open data (script 05). Pulled AOI-clipped from GTK's public ArcGIS REST
+# server (free, CC BY 4.0). `native_wkid` is each service's own CRS; the query
+# sends the AOI bbox in that CRS and asks the server to return EPSG:3067 geometry.
+# `out` is relative to data/raw/. kind drives downstream use.
+# -----------------------------------------------------------------------------
+gtk:
+  arcgis_root: "https://gtkdata.gtk.fi/arcgis/rest/services"
+  query_aoi_3067: [350000, 7450000, 530000, 7620000]
+  request_timeout_s: 60
+  page_size: 1000
+  layers:
+    - {name: fodd_precious_metals, service: "Fodd/fodd_FDM_v5", layer: 39, native_wkid: 25834, out: "gtk/fodd_precious_metals.gpkg", kind: deposits}
+    - {name: gold_mines,           service: "MDaE/Mines_deposits", layer: 5, native_wkid: 3067, out: "gtk/gold_mines.gpkg", kind: deposits}
+    - {name: structures,           service: "GTK_Bedrock_and_Superficial_Geology", layer: 0, native_wkid: 4326, out: "gtk/structures.gpkg", kind: structures}
+    - {name: bedrock,              service: "GTK_Bedrock_and_Superficial_Geology", layer: 3, native_wkid: 4326, out: "gtk/bedrock.gpkg", kind: bedrock}
+    - {name: natura2000,           service: "MDaE/NatureETC", layer: 1, native_wkid: 3067, out: "restrictions/natura2000/natura2000.gpkg", kind: restriction}
+    - {name: protected_areas,      service: "MDaE/NatureETC", layer: 2, native_wkid: 3067, out: "restrictions/protected_areas/protected_areas.gpkg", kind: restriction}
+    - {name: groundwater,          service: "MDaE/NatureETC", layer: 0, native_wkid: 3067, out: "restrictions/water_bodies/groundwater.gpkg", kind: restriction}
+  # Datasets NOT available as queryable REST features (rasters / not served) — these
+  # become null feature columns + a download checklist, never invented.
+  missing_expected:
+    - {feature: "mag_1vd", dataset: "Airborne magnetics (TMI grid)", source: "GTK Hakku airborne geophysics — https://hakku.gtk.fi"}
+    - {feature: "mag_low_in_high_proxy", dataset: "Airborne magnetics (TMI grid)", source: "GTK Hakku"}
+    - {feature: "gravity_gradient", dataset: "Gravity grid", source: "GTK / National Land Survey gravity database"}
+    - {feature: "till_au_clr/as/sb/bi", dataset: "Till geochemistry (regional/fine)", source: "GTK Hakku geochemistry — Sn/till survey"}
+
+step2:
+  primary_grid: "clgb_grid_2km.gpkg"   # 2 km first
+  fine_grid: "clgb_grid_1km.gpkg"
+
+# -----------------------------------------------------------------------------
+# CLGB orogenic-gold label rules (script 07). Filter FODD GENETIC_TYPE.
+# -----------------------------------------------------------------------------
+labels:
+  genetic_field: "GENETIC_TYPE"
+  commodity_field: "MAIN_COMMODITIES"
+  name_field: "NAME"
+  include_genetic_keywords:        # CLGB-compatible orogenic gold only
+    - "orogenic gold"
+  exclude_genetic_keywords:        # contaminating non-CLGB systems
+    - "iron oxide-copper-gold"
+    - "iocg"
+    - "uranium"
+    - "au-u"
+    - "co-u"
+    - "kuusamo"
+    - "volcanogenic"
+    - "vms"
+    - "epithermal"
+    - "porphyry"
+    - "intrusion-related"
+    - "intrusion related"
+    - "placer"
+    - "paleoplacer"
+    - "skarn"
+
+# -----------------------------------------------------------------------------
+# Background / unlabelled sampling (script 08).
+# -----------------------------------------------------------------------------
+background:
+  positive_exclusion_buffer_m: 5000   # don't sample background within 5 km of a positive
+  random_seed: 42
+
+# -----------------------------------------------------------------------------
+# Spatial block cross-validation (script 09).
+# -----------------------------------------------------------------------------
+spatial_blocks:
+  block_size_m: 20000                 # 20 km x 20 km blocks
+
+# -----------------------------------------------------------------------------
+# Till-shift ablation (script 11c / feature stack).
+# Regional ice flow in Central Lapland was broadly NW -> SE; till is transported
+# DOWN-ice (toward SE), so the bedrock source is UP-ice (toward NW). We shift till
+# sample points up-ice by several distances and compare. PROVISIONAL until a real
+# ice-flow / glacial-landform layer is supplied.
+# -----------------------------------------------------------------------------
+till_shift:
+  ice_flow_to_azimuth_deg: 135        # direction ice/till moved TOWARD (deg from N) — PROVISIONAL
+  shifts_m: [0, 500, 1000, 2000]      # 0 = raw; up-ice shifts
+  long_shift_m: 5000                  # used only if streamlined-moraine data exists
+  provisional: true

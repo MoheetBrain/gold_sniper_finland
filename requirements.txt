@@ -24,6 +24,7 @@ xarray
 pandas
 numpy
 scipy
+pyarrow
 
 # ML
 scikit-learn
