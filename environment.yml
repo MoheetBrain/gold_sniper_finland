@@ -1,0 +1,43 @@
+# GeoArb_Finland — conda environment for the Step 1 legal-availability engine
+# (and the geodata/ML stack needed for later Step 2 work).
+#
+# Create with:   conda env create -f environment.yml
+# Activate with: conda activate geoarb
+#
+# Standard project CRS is EPSG:3067 (ETRS89 / TM35FIN).
+name: geoarb
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  # --- Core geospatial vector stack ---
+  - geopandas
+  - shapely
+  - pyogrio        # fast vector IO backend for geopandas
+  - fiona          # fallback vector IO / driver support
+  - pyproj
+  - gdal
+  # --- Raster stack (needed for Step 2 geophysics/geochem) ---
+  - rasterio
+  - rioxarray
+  - xarray
+  # --- Tabular / numeric ---
+  - pandas
+  - numpy
+  - scipy
+  # --- ML ---
+  - scikit-learn
+  - xgboost
+  - shap
+  # --- Plotting ---
+  - matplotlib
+  # --- Web scraping / IO ---
+  - requests
+  - beautifulsoup4
+  - lxml
+  # --- Config / utilities ---
+  - pyyaml
+  - tqdm
+  # --- Testing ---
+  - pytest
+  - pip

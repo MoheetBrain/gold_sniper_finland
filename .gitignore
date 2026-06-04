@@ -1,0 +1,29 @@
+# --- Data (never commit raw downloads or large geodata) ---
+data/raw/
+data/interim/
+data/processed/
+data/outputs/
+# Keep folder structure markers
+!data/**/.gitkeep
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# --- Conda ---
+.conda/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- QGIS ---
+*.qgz~
+*.qgs~

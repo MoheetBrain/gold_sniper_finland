@@ -1,0 +1,1292 @@
+GEOARB_FINLAND — PROJECT ARCHITECTURE
+AI-assisted gold prospectivity + digital target origination
+Version: 0.1
+Prepared for: Moheet / MoheetAi
+Date: 2026-06-04
+
+============================================================
+0. ONE-SENTENCE PROJECT DEFINITION
+============================================================
+GeoArb_Finland is a software-and-research pipeline that uses Finnish public geology/geophysics data, AI/ML prospectivity modelling, and Tukes cadastre/legal filters to generate high-quality orogenic gold target packages in the Central Lapland Greenstone Belt, then decide whether to reserve, partner, consult, or kill the target.
+
+This is NOT a mining project.
+This is NOT physical gold panning.
+This is NOT “satellite sees gold.”
+
+This is a target-intelligence and prospect-generator project:
+
+    public data + geology + ML + cadastre control + target memo + buyer outreach
+
+============================================================
+1. CORE THESIS
+============================================================
+The report’s core conclusion is:
+
+    Finland first.
+    Central Lapland first.
+    Orogenic gold first.
+    GTK geophysics/till geochemistry first.
+    Tukes reservation / partner route first.
+
+Why Finland:
+- Good gold endowment.
+- Central Lapland has major gold systems: Kittila / Suurikuusikko, Ikkari, etc.
+- GTK has strong public geophysics and geochemistry.
+- Finland has a reservation mechanism that may allow low-cost target priority before expensive exploration.
+- Nordic-focused junior explorers and majors already care about this belt.
+
+Why NOT pure satellite-first:
+- Finland is covered by forest, lakes, snow, and glacial till.
+- Direct optical alteration mapping with Sentinel/Landsat is weak.
+- The strategy must pivot from “pretty satellite colours” to geophysics + structure + till geochemistry.
+
+Why this still fits AI:
+- The data is high-dimensional.
+- Known deposits provide labels.
+- Unknown land is mostly unlabelled, not truly negative.
+- ML can rank structural/geophysical/geochemical convergence.
+- The real edge is integrating public data faster and more systematically than traditional juniors.
+
+============================================================
+2. PROJECT GOALS
+============================================================
+Primary goal:
+    Build a working AI-assisted prospectivity engine for Finland gold target generation.
+
+7-day sprint goal:
+    Produce a credible ranked target map and 3 target memos for Central Lapland.
+
+30-day goal:
+    Build a reproducible pipeline, run backtests, identify top open/reservable target candidates, and start expert/geologist/company feedback.
+
+Commercial goal:
+    Convert target intelligence into one of:
+    - reservation + option/JV discussion
+    - consulting to existing claim holders
+    - data-room sale
+    - partnership with junior explorer / geological consultant
+    - royalty/NSR-style retained upside if legally possible
+
+Hard success criteria:
+    1. Known deposits rank high in backtesting.
+    2. Top model outputs are not single-sensor hallucinations.
+    3. Top targets survive cadastre/protected-land masking.
+    4. Top targets have multi-layer evidence convergence.
+    5. At least 5 plausible buyer/partner entities exist.
+    6. A local geologist / consultant can review or validate cheaply.
+
+============================================================
+3. NON-GOALS
+============================================================
+This project does NOT aim to:
+- Mine gold.
+- Physically dig or sample without permission.
+- Spend large personal capital.
+- Replace professional geology.
+- Claim that AI proves gold exists.
+- Reveal exact target coordinates to companies without staged disclosure.
+- Build a black-box hype map.
+- Continue if validation/backtesting fails.
+
+============================================================
+4. STRATEGIC SPLIT: FINLAND FIRST, SAUDI SECOND
+============================================================
+FINLAND_BRANCH = claim/control experiment
+- Better for legal priority and prospect-generator route.
+- Worse for optical satellite visibility.
+- Stronger for public geophysics and ML labels.
+- Best initial sprint.
+
+SAUDI_BRANCH = partner-led target-intelligence experiment
+- Better exposed geology and satellite visibility.
+- Weaker solo legal-control path.
+- More likely to require local company/partner/licensing route.
+- Keep as phase 2 after pipeline proves itself.
+
+This architecture starts with Finland because the report’s execution logic values:
+    target generation -> legal/cadastre route -> memo -> partner/JV
+
+============================================================
+5. MAIN DEPOSIT MODEL: OROGENIC GOLD
+============================================================
+Orogenic gold = structurally controlled gold systems formed in shear/fault zones during deformation.
+
+What to search for:
+- Major shear zones.
+- Second-order splays off major structures.
+- Fault bends / jogs / intersections.
+- Reactive host rocks: iron-rich volcanic rocks, carbonaceous sediments, tholeiitic basalts.
+- Magnetic destruction zones: places where hydrothermal fluids destroyed magnetite, causing magnetic lows.
+- Till geochemistry anomalies: Au, As, Sb, Te, Bi, W, Cu, Co, Ni, S etc.
+- Proximity to known deposits, but not simply copying known mined areas.
+
+Central Lapland priority concepts:
+- Sirkka Line / Sirkka shear zone.
+- Kiistala shear zone.
+- Kittila/Suurikuusikko analogues.
+- Ikkari-style structural targets.
+- Structural splays and intersections on open/reservable ground.
+
+============================================================
+6. HIGH-LEVEL DATA FLOW
+============================================================
+
+    1. Define AOI
+       Central Lapland Greenstone Belt, Finland
+
+    2. Download public datasets
+       GTK geology, magnetics, gravity, EM, radiometrics, till geochemistry, deposits
+       Tukes cadastre/reservations/protected areas if available
+       DEM/SRTM/Copernicus elevation
+       optional Sentinel/Landsat for context only
+
+    3. Standardise all data
+       common CRS, resolution, grid, extent, file naming
+
+    4. Generate evidence layers
+       distance-to-faults, lineament density, magnetic derivatives, geochem anomalies, lithology features
+
+    5. Build labels
+       positive = known deposits/occurrences
+       unlabelled = unknown background
+       avoid treating all unknown pixels as barren
+
+    6. Train baseline model
+       Random Forest / XGBoost first
+       MLP/EIS Toolkit optional after baseline
+
+    7. Backtest
+       spatial cross-validation
+       leave-one-district-out
+       top-k area capture
+
+    8. Generate prospectivity raster
+       0-1 score for every grid cell
+
+    9. Falsify targets
+       remove single-sensor anomalies
+       remove protected/claimed/unusable areas
+       remove historical exhausted sites
+       remove obvious artefacts
+
+    10. Rank target cells
+        top 20 candidates
+        top 5 open/legal candidates
+        top 3 target memos
+
+    11. Commercial decision
+        reserve / partner / consult / kill
+
+============================================================
+7. RECOMMENDED FOLDER STRUCTURE
+============================================================
+
+GeoArb_Finland/
+├── README.md
+├── PROJECT_RULES.md
+├── environment.yml
+├── requirements.txt
+├── .gitignore
+├── configs/
+│   ├── project_config.yaml
+│   ├── finland_clgb_aoi.yaml
+│   ├── model_config.yaml
+│   ├── feature_config.yaml
+│   └── scoring_weights.yaml
+├── docs/
+│   ├── 00_project_architecture.txt
+│   ├── 01_geology_notes/
+│   ├── 02_legal_notes_tukes/
+│   ├── 03_buyer_universe/
+│   ├── 04_target_memo_templates/
+│   └── 05_meeting_notes/
+├── data/
+│   ├── raw/
+│   │   ├── gtk_geology/
+│   │   ├── gtk_magnetics/
+│   │   ├── gtk_gravity/
+│   │   ├── gtk_em/
+│   │   ├── gtk_radiometrics/
+│   │   ├── gtk_till_geochemistry/
+│   │   ├── gtk_mineral_occurrences/
+│   │   ├── tukes_cadastre/
+│   │   ├── protected_areas/
+│   │   ├── dem/
+│   │   └── satellite_context/
+│   ├── interim/
+│   │   ├── reprojected/
+│   │   ├── clipped/
+│   │   ├── gridded/
+│   │   └── cleaned/
+│   ├── processed/
+│   │   ├── evidence_layers/
+│   │   ├── labels/
+│   │   ├── masks/
+│   │   └── target_cells/
+│   └── external/
+├── notebooks/
+│   ├── 00_data_inventory.ipynb
+│   ├── 01_aoi_and_map_view.ipynb
+│   ├── 02_feature_engineering.ipynb
+│   ├── 03_label_building.ipynb
+│   ├── 04_baseline_model.ipynb
+│   ├── 05_spatial_cross_validation.ipynb
+│   ├── 06_target_ranking.ipynb
+│   ├── 07_cadastre_masking.ipynb
+│   └── 08_target_memo_figures.ipynb
+├── src/
+│   ├── __init__.py
+│   ├── data_download/
+│   │   ├── download_gtk_layers.py
+│   │   ├── download_dem.py
+│   │   ├── download_satellite_context.py
+│   │   └── fetch_tukes_cadastre.py
+│   ├── preprocessing/
+│   │   ├── standardize_crs.py
+│   │   ├── clip_to_aoi.py
+│   │   ├── rasterize_vectors.py
+│   │   ├── resample_rasters.py
+│   │   └── build_master_grid.py
+│   ├── features/
+│   │   ├── magnetic_derivatives.py
+│   │   ├── lineament_features.py
+│   │   ├── distance_features.py
+│   │   ├── lithology_features.py
+│   │   ├── geochem_features.py
+│   │   ├── topography_features.py
+│   │   └── build_feature_stack.py
+│   ├── labels/
+│   │   ├── build_positive_labels.py
+│   │   ├── build_unlabelled_background.py
+│   │   └── spatial_train_test_split.py
+│   ├── models/
+│   │   ├── train_random_forest.py
+│   │   ├── train_xgboost.py
+│   │   ├── train_mlp.py
+│   │   ├── train_pu_model.py
+│   │   └── predict_prospectivity.py
+│   ├── validation/
+│   │   ├── spatial_cv.py
+│   │   ├── topk_capture.py
+│   │   ├── calibration.py
+│   │   └── compare_baselines.py
+│   ├── targeting/
+│   │   ├── build_claim_masks.py
+│   │   ├── build_protected_area_masks.py
+│   │   ├── cluster_top_pixels.py
+│   │   ├── rank_targets.py
+│   │   ├── falsify_targets.py
+│   │   └── export_target_packages.py
+│   ├── reporting/
+│   │   ├── make_maps.py
+│   │   ├── make_target_memo.py
+│   │   ├── make_buyer_list.py
+│   │   └── make_sprint_report.py
+│   └── utils/
+│       ├── logging_utils.py
+│       ├── config.py
+│       ├── file_checks.py
+│       └── geo_utils.py
+├── qgis/
+│   ├── GeoArb_Finland_CLGB.qgz
+│   ├── styles/
+│   └── layouts/
+├── outputs/
+│   ├── maps/
+│   ├── rasters/
+│   ├── tables/
+│   ├── target_memos/
+│   ├── sprint_reports/
+│   └── figures/
+├── legal_and_commercial/
+│   ├── tukes_reservation_notes.md
+│   ├── staged_disclosure_protocol.md
+│   ├── nda_questions.md
+│   ├── target_teaser_template.md
+│   └── buyer_outreach_tracker.csv
+└── tests/
+    ├── test_data_integrity.py
+    ├── test_feature_shapes.py
+    ├── test_no_crs_mismatch.py
+    └── test_model_outputs.py
+
+============================================================
+8. TOOL STACK AND HOW TO USE EACH TOOL
+============================================================
+
+8.1 Google Antigravity
+Role:
+    Agentic coding environment / project orchestration.
+
+Use it for:
+    - Creating the repo skeleton.
+    - Writing boilerplate Python scripts.
+    - Running tests.
+    - Maintaining task plans.
+    - Browser-assisted documentation lookup.
+    - Generating README updates and sprint checklists.
+
+How to use:
+    - Open the project folder as a workspace.
+    - Create a Mission: “Build GeoArb_Finland data pipeline.”
+    - Give it one script at a time, not the whole project.
+    - Require it to write tests before modifying destructive code.
+    - Never allow autonomous deletion or system-wide cleanup.
+    - Keep all outputs inside GeoArb_Finland/ only.
+
+Safety rule:
+    Agent may read/write project files only.
+    No rm -rf.
+    No deleting Downloads/Desktop.
+    No secret API keys in scripts.
+
+8.2 JetBrains / PyCharm
+Role:
+    Serious Python IDE for editing, debugging, and running code.
+
+Use it for:
+    - Refactoring scripts.
+    - Debugging raster/vector shape errors.
+    - Managing virtual environments.
+    - Running unit tests.
+    - Git commits.
+
+How to use:
+    - Open GeoArb_Finland/ as project.
+    - Configure Python 3.11+ environment.
+    - Use src/ as source root.
+    - Use notebooks for exploration, src/ for production code.
+
+8.3 QGIS
+Role:
+    GIS visual brain. Map layers, inspect targets, produce figures.
+
+Use it for:
+    - Viewing GTK layers.
+    - Checking CRS and overlays.
+    - Visualising prospectivity rasters.
+    - Styling target maps.
+    - Preparing target memo figures.
+    - Running EIS Toolkit plugin.
+
+How to use:
+    - Load AOI boundary.
+    - Load evidence rasters.
+    - Load known deposits.
+    - Load Tukes cadastre/protected layers.
+    - Add target cells and inspect manually.
+    - Export high-quality map layouts.
+
+8.4 EIS Toolkit / EIS QGIS Plugin
+Role:
+    Open-source mineral prospectivity mapping toolkit.
+
+Use it for:
+    - Prospectivity modelling.
+    - ML layers inside QGIS.
+    - Rapid geologist-friendly workflows.
+
+How to use:
+    - Install QGIS plugin if compatible.
+    - Test on sample dataset first.
+    - Use it as a parallel baseline, not the only model.
+    - Compare EIS output against your own Python model.
+
+8.5 Python
+Role:
+    Reproducible data engine.
+
+Use it for:
+    - Downloading/processing data.
+    - Building evidence rasters.
+    - Training models.
+    - Running backtests.
+    - Exporting target tables and maps.
+
+Core libraries:
+    geopandas       vector GIS data
+    rasterio        raster IO
+    rioxarray       raster + xarray workflows
+    xarray          multi-dimensional raster stacks
+    numpy           arrays
+    pandas          tables
+    scipy           filters/interpolation
+    scikit-learn    Random Forest, metrics, CV
+    xgboost         gradient boosting
+    imbalanced-learn SMOTE/class imbalance
+    shap            feature importance/explainability
+    matplotlib      plots
+    folium/geemap   quick web maps
+    pyproj          coordinate transforms
+    shapely         geometry operations
+
+8.6 Google Earth Engine
+Role:
+    Satellite/context layer processing.
+
+Use it for:
+    - Sentinel/Landsat context imagery.
+    - Cloud/snow-free composite generation.
+    - DEM context.
+    - Regional visual sanity checks.
+
+Important:
+    In Finland, satellite is secondary. Do not over-weight it.
+
+8.7 GTK / Finnish geological data portals
+Role:
+    Primary evidence source.
+
+Use it for:
+    - Bedrock geology.
+    - Mineral deposits/occurrences.
+    - Aeromagnetics.
+    - EM.
+    - Gravity.
+    - Radiometrics.
+    - Till geochemistry.
+
+How to use:
+    - Download layers manually first.
+    - Record all source URLs and metadata.
+    - Build download scripts only after you understand file formats.
+
+8.8 Tukes cadastre / reservation systems
+Role:
+    Legal/open-ground filter.
+
+Use it for:
+    - Active permits.
+    - Reservations.
+    - Protected/unavailable land.
+    - Candidate reservation feasibility.
+
+How to use:
+    - Use manually first.
+    - Later automate if WFS/API available.
+    - Never assume reservation = mining right.
+    - Always verify legal state before outreach.
+
+============================================================
+9. SCRIPT-BY-SCRIPT DESIGN
+============================================================
+
+9.1 download_gtk_layers.py
+Purpose:
+    Download or register paths to GTK data.
+
+Inputs:
+    configs/finland_clgb_aoi.yaml
+    configs/project_config.yaml
+
+Outputs:
+    data/raw/gtk_* folders
+    data/raw/metadata/gtk_sources.csv
+
+Functions:
+    load_gtk_source_catalog()
+    download_layer(url, output_path)
+    verify_checksum()
+    write_metadata_record()
+
+Notes:
+    Start with manual downloads. Script later.
+
+9.2 fetch_tukes_cadastre.py
+Purpose:
+    Fetch active reservations/permits/claims if public data endpoint exists.
+
+Outputs:
+    data/raw/tukes_cadastre/active_titles.gpkg
+    data/processed/masks/claim_mask.tif
+
+Functions:
+    fetch_wfs_layer()
+    clean_title_polygons()
+    filter_active_titles()
+    export_claim_mask()
+
+Risk:
+    If no reliable API exists, maintain manual export workflow.
+
+9.3 standardize_crs.py
+Purpose:
+    Ensure every raster/vector shares the same CRS.
+
+Outputs:
+    data/interim/reprojected/
+
+Functions:
+    detect_crs()
+    reproject_vector()
+    reproject_raster()
+    assert_crs_match()
+
+9.4 clip_to_aoi.py
+Purpose:
+    Clip all layers to Central Lapland AOI.
+
+Outputs:
+    data/interim/clipped/
+
+Functions:
+    load_aoi()
+    clip_vector_to_aoi()
+    clip_raster_to_aoi()
+
+9.5 build_master_grid.py
+Purpose:
+    Create the common modelling grid.
+
+Recommended grid sizes:
+    100 m for detailed model if data supports it.
+    250 m or 500 m for first sprint.
+
+Outputs:
+    data/processed/master_grid.gpkg
+    data/processed/master_grid.tif
+
+Functions:
+    create_grid()
+    assign_cell_ids()
+    export_grid()
+
+9.6 magnetic_derivatives.py
+Purpose:
+    Generate magnetic features.
+
+Inputs:
+    aeromagnetic raster
+
+Outputs:
+    evidence rasters:
+        mag_raw.tif
+        mag_1vd.tif
+        mag_tilt.tif
+        mag_analytic_signal.tif
+        mag_low_zscore.tif
+
+Functions:
+    first_vertical_derivative()
+    tilt_derivative()
+    analytic_signal()
+    zscore_raster()
+    detect_magnetic_lows()
+
+Why it matters:
+    Orogenic systems may show magnetic destruction from hydrothermal alteration.
+
+9.7 lineament_features.py
+Purpose:
+    Extract structural features.
+
+Inputs:
+    magnetic derivatives, DEM, faults if available
+
+Outputs:
+    lineaments.gpkg
+    lineament_density.tif
+    fault_intersection_density.tif
+
+Functions:
+    edge_detect_raster()
+    skeletonize_edges()
+    vectorize_lineaments()
+    calculate_lineament_density()
+    calculate_intersections()
+
+Optional advanced:
+    U-Net lineament extractor trained/hand-tuned on magnetic/DEM imagery.
+
+9.8 distance_features.py
+Purpose:
+    Build distance/proximity rasters.
+
+Inputs:
+    faults, shear zones, lithological contacts, known deposits
+
+Outputs:
+    dist_to_major_fault.tif
+    dist_to_splay_fault.tif
+    dist_to_lith_contact.tif
+    dist_to_known_deposit.tif
+
+Functions:
+    distance_to_vector()
+    normalize_distance()
+
+9.9 lithology_features.py
+Purpose:
+    Encode favourable host rocks.
+
+Inputs:
+    GTK bedrock geology polygons
+
+Outputs:
+    lithology_onehot_*.tif
+    reactive_lithology_score.tif
+
+Functions:
+    classify_lithology()
+    rasterize_lithology()
+    build_reactive_score()
+
+9.10 geochem_features.py
+Purpose:
+    Process till geochemistry.
+
+Inputs:
+    till geochem points/grids
+
+Outputs:
+    au_anomaly.tif
+    as_anomaly.tif
+    sb_anomaly.tif
+    te_bi_w_pathfinder_score.tif
+    combined_pathfinder_score.tif
+
+Functions:
+    clean_geochem_table()
+    winsorize_outliers()
+    log_transform()
+    interpolate_points_to_grid()
+    calculate_element_zscores()
+    build_pathfinder_index()
+
+Important:
+    Adjust for glacial transport if ice-flow vectors are available.
+
+9.11 build_feature_stack.py
+Purpose:
+    Combine all evidence layers into modelling table.
+
+Outputs:
+    data/processed/features/feature_stack.parquet
+    data/processed/features/feature_rasters.tif
+
+Functions:
+    load_feature_rasters()
+    sample_rasters_to_grid()
+    handle_missing_values()
+    write_feature_table()
+
+9.12 build_positive_labels.py
+Purpose:
+    Convert known deposits/occurrences into labels.
+
+Inputs:
+    GTK mineral occurrence/deposit database
+
+Outputs:
+    labels_positive.gpkg
+    model_labels.parquet
+
+Functions:
+    filter_gold_occurrences()
+    buffer_deposit_points()
+    assign_positive_cells()
+
+Important:
+    Separate economic deposits from minor showings if possible.
+
+9.13 build_unlabelled_background.py
+Purpose:
+    Create unlabelled/background samples safely.
+
+Why:
+    Unknown does NOT equal barren.
+
+Approaches:
+    - PU learning.
+    - random background with low-confidence negative label.
+    - distance buffer away from known deposits.
+
+Outputs:
+    labels_unlabelled.parquet
+
+Functions:
+    sample_background_cells()
+    exclude_positive_buffers()
+    assign_label_confidence()
+
+9.14 spatial_train_test_split.py
+Purpose:
+    Avoid overfitting by splitting spatially, not randomly.
+
+Outputs:
+    train_cells.csv
+    val_cells.csv
+    test_cells.csv
+
+Functions:
+    create_spatial_blocks()
+    leave_one_block_out_split()
+    ensure_no_leakage()
+
+9.15 train_random_forest.py
+Purpose:
+    First explainable baseline model.
+
+Outputs:
+    models/random_forest.pkl
+    outputs/tables/rf_feature_importance.csv
+    outputs/rasters/rf_prospectivity.tif
+
+Functions:
+    load_features_labels()
+    train_model()
+    cross_validate()
+    export_feature_importance()
+    predict_grid()
+
+9.16 train_xgboost.py
+Purpose:
+    Stronger gradient-boosting model.
+
+Outputs:
+    models/xgboost.json
+    outputs/rasters/xgb_prospectivity.tif
+
+Functions:
+    train_xgb()
+    tune_hyperparameters()
+    predict_grid()
+    export_shap_values()
+
+9.17 train_mlp.py
+Purpose:
+    Neural baseline / EIS comparison.
+
+Outputs:
+    models/mlp.pt or models/mlp.pkl
+
+Functions:
+    scale_features()
+    train_mlp()
+    evaluate_mlp()
+
+9.18 train_pu_model.py
+Purpose:
+    Handle positive-unlabelled setting.
+
+Why:
+    Most land is unknown, not confirmed barren.
+
+Outputs:
+    outputs/rasters/pu_prospectivity.tif
+
+Functions:
+    estimate_class_prior()
+    train_pu_classifier()
+    calibrate_probabilities()
+
+9.19 spatial_cv.py
+Purpose:
+    Proper validation.
+
+Outputs:
+    outputs/tables/spatial_cv_results.csv
+
+Functions:
+    run_spatial_cv()
+    leave_one_district_out()
+    summarize_metrics()
+
+Metrics:
+    AUC is not enough.
+    Top-k capture matters more.
+
+9.20 topk_capture.py
+Purpose:
+    Check whether model captures known deposits in top-ranked area.
+
+Outputs:
+    outputs/tables/topk_capture.csv
+
+Functions:
+    calculate_area_percentiles()
+    count_deposits_in_top_k()
+    plot_capture_curve()
+
+Decision gate:
+    Continue only if known deposits are enriched in top 5-10% of area.
+
+9.21 compare_baselines.py
+Purpose:
+    Ensure ML beats simple heuristics.
+
+Baselines:
+    distance to major faults only
+    geochemistry score only
+    random model
+    geology-only model
+
+Outputs:
+    outputs/tables/baseline_comparison.csv
+
+9.22 build_claim_masks.py
+Purpose:
+    Remove active reservations/permits/claims.
+
+Outputs:
+    data/processed/masks/claim_mask.tif
+
+Functions:
+    rasterize_claims()
+    mark_available_cells()
+
+9.23 build_protected_area_masks.py
+Purpose:
+    Remove Natura/protected/Sami/land restriction zones.
+
+Outputs:
+    data/processed/masks/protected_mask.tif
+
+Functions:
+    load_protected_areas()
+    rasterize_restrictions()
+
+9.24 cluster_top_pixels.py
+Purpose:
+    Turn top pixels into coherent target cells.
+
+Inputs:
+    prospectivity raster
+
+Outputs:
+    target_clusters.gpkg
+
+Functions:
+    threshold_top_percent()
+    connected_components()
+    calculate_cluster_stats()
+
+9.25 rank_targets.py
+Purpose:
+    Score target clusters.
+
+Target Score:
+    0.30 model probability
+    0.20 structural complexity
+    0.15 geochem support
+    0.15 magnetic destruction
+    0.10 legal availability
+    0.05 access/logistics
+    0.05 buyer/adjacent-holder relevance
+
+Outputs:
+    outputs/tables/top20_targets.csv
+
+9.26 falsify_targets.py
+Purpose:
+    Kill hallucinated targets.
+
+Checks:
+    - single-sensor anomaly?
+    - inside known exhausted site?
+    - protected area?
+    - no geophysics convergence?
+    - no geochem/pathfinder support?
+    - obviously infrastructural/urban?
+
+Outputs:
+    outputs/tables/falsification_report.csv
+
+9.27 make_maps.py
+Purpose:
+    Produce clean map figures.
+
+Outputs:
+    outputs/maps/
+
+Map types:
+    prospectivity heatmap
+    target + evidence layers
+    cadastre/open ground map
+    geochemistry map
+    magnetic derivatives map
+    buyer/adjacent holder map
+
+9.28 make_target_memo.py
+Purpose:
+    Generate a 5-10 page memo per top target.
+
+Sections:
+    - Executive summary
+    - Geological thesis
+    - Evidence layers
+    - Model score and uncertainty
+    - Legal/cadastre status
+    - False-positive checks
+    - Validation plan
+    - Buyer/partner fit
+    - Appendix maps
+
+Outputs:
+    outputs/target_memos/TARGET_ID_memo.md
+    outputs/target_memos/TARGET_ID_memo.pdf optional later
+
+9.29 make_buyer_list.py
+Purpose:
+    Build list of potential partners.
+
+Buyer types:
+    - Nordic-focused TSX-V juniors
+    - ASX European-focused explorers
+    - EMX-style prospect generators
+    - adjacent claim holders
+    - private mining funds
+    - local Finnish geologists/consultants
+
+Outputs:
+    legal_and_commercial/buyer_outreach_tracker.csv
+
+9.30 make_sprint_report.py
+Purpose:
+    Summarise the sprint.
+
+Outputs:
+    outputs/sprint_reports/7_day_sprint_report.md
+
+Contains:
+    - what was tested
+    - model performance
+    - target list
+    - open-ground status
+    - kill/continue decision
+
+============================================================
+10. FIRST 48 HOURS EXECUTION PLAN
+============================================================
+
+Hour 0-2: Create repo
+    - Create GeoArb_Finland folder.
+    - Add README, configs, data folders, src folders.
+    - Initialise git.
+    - Create Python environment.
+
+Hour 2-6: Manual data inventory
+    - Open GTK portals.
+    - Identify Central Lapland datasets.
+    - Download sample layers only, not everything.
+    - Load them into QGIS.
+    - Confirm CRS and file formats.
+
+Hour 6-10: QGIS visual setup
+    - Create GeoArb_Finland_CLGB.qgz.
+    - Load AOI, geology, magnetics, known deposits, Tukes/cadastre if available.
+    - Save a simple base map.
+
+Hour 10-16: Build first feature layers
+    - Standardise CRS.
+    - Clip data to AOI.
+    - Generate distance to faults/shears.
+    - Generate first magnetic derivative if data format permits.
+
+Hour 16-24: Build first labels
+    - Extract known gold deposits/occurrences.
+    - Create positive label buffers.
+    - Create unlabelled background.
+
+Day 2 morning: First baseline model
+    - Random Forest using 5-10 simple features.
+    - Output rough prospectivity raster.
+
+Day 2 afternoon: Backtest sanity
+    - Do known deposits appear in top 10% area?
+    - Does model merely select already-known mines?
+    - Does it overfit spatially?
+
+Day 2 evening: Decision
+    Continue only if:
+        - data loads cleanly
+        - known deposits enrich high-prospectivity zones
+        - cadastre/protected overlays are possible
+        - top anomalies are not nonsense
+
+============================================================
+11. 7-DAY SPRINT PLAN
+============================================================
+
+Day 1: Data acquisition + AOI
+Deliverables:
+    data inventory
+    QGIS project
+    AOI boundary
+    known deposits layer
+
+Day 2: Feature engineering
+Deliverables:
+    magnetic derivatives
+    lineament/intersection layers
+    lithology/reactive host score
+    till geochem/pathfinder score
+
+Day 3: Labels + baseline ML
+Deliverables:
+    positive labels
+    unlabelled background
+    RF/XGBoost baseline
+    first prospectivity raster
+
+Day 4: Backtesting + validation
+Deliverables:
+    spatial CV report
+    top-k capture curve
+    baseline comparison
+    overfitting warning list
+
+Day 5: Cadastre/protected masks + ranking
+Deliverables:
+    claim mask
+    protected-area mask
+    top 20 target cells
+    top 5 open/reservable candidates
+
+Day 6: Target memos
+Deliverables:
+    3 target memos
+    maps for each target
+    false-positive checks
+    validation plan
+
+Day 7: Commercial decision
+Deliverables:
+    reserve/partner/kill decision
+    buyer list
+    teaser paragraph
+    next 30-day plan
+
+============================================================
+12. KILL CRITERIA
+============================================================
+
+Kill immediately if:
+1. The model fails spatial cross-validation.
+2. Known deposits do not rank in top 10% area.
+3. Top targets are all on active permits/reservations/protected areas.
+4. Anomalies depend on only one data layer.
+5. Targets lack structural + geophysical + geochemical convergence.
+6. No open/reservable target survives masking.
+7. Tukes/reservation route is not legally usable.
+8. No credible buyer/partner universe exists.
+9. Local geologist review would cost too much or be impossible.
+10. The project becomes pretty maps without commercial/legal pathway.
+
+============================================================
+13. CONTINUE CRITERIA
+============================================================
+
+Continue if:
+1. Known deposits are captured in top 5-10% of ranked area.
+2. At least 3 target clusters survive falsification.
+3. At least one target has legal/reservation path.
+4. Top target has 3+ independent evidence layers.
+5. There are 5+ plausible buyers/partners.
+6. A local geologist can review for a controlled fee.
+7. The target memo reads like conservative geology, not AI hype.
+
+============================================================
+14. WHAT “GOOD TARGET” MEANS
+============================================================
+
+A good target is NOT:
+    “The model says high probability.”
+
+A good target is:
+    A coherent area where multiple independent geological signals converge:
+        - structural complexity
+        - second-order fault/splay
+        - magnetic destruction / geophysical anomaly
+        - favourable lithology
+        - till geochemistry/pathfinder support
+        - not already claimed/protected
+        - close enough to infrastructure
+        - plausible buyer interest
+
+============================================================
+15. TARGET MEMO TEMPLATE
+============================================================
+
+Title:
+    TARGET_ID — Central Lapland Orogenic Gold Target
+
+1. Executive Summary
+    - one paragraph, no hype
+
+2. Location and Legal Status
+    - AOI map
+    - cadastre status
+    - protected land check
+
+3. Deposit Model
+    - orogenic shear-hosted gold
+    - why this target fits
+
+4. Evidence Layers
+    - structure
+    - magnetics
+    - till geochemistry
+    - lithology
+    - proximity to known deposits
+
+5. ML Score
+    - model ranking
+    - uncertainty
+    - backtest context
+
+6. False Positive Checks
+    - single-sensor? no/yes
+    - exhausted site? no/yes
+    - glacial transport issue?
+    - artefact issue?
+
+7. Validation Plan
+    - local geologist review
+    - field mapping
+    - rock chip / till sampling
+    - next geophysics if needed
+
+8. Commercial Fit
+    - likely buyer/partner type
+    - why they would care
+
+9. Recommendation
+    - reserve / partner / kill
+
+============================================================
+16. AGENT TASK BREAKDOWN
+============================================================
+
+Use Google Antigravity / coding agents like this:
+
+Agent 1: Data Agent
+    Mission: Create scripts to inventory and load GTK/Tukes data.
+
+Agent 2: GIS Agent
+    Mission: Build QGIS layer structure and style maps.
+
+Agent 3: Feature Agent
+    Mission: Create raster feature engineering scripts.
+
+Agent 4: Model Agent
+    Mission: Train RF/XGBoost baseline and export prospectivity raster.
+
+Agent 5: Validation Agent
+    Mission: Run spatial CV and top-k capture metrics.
+
+Agent 6: Target Agent
+    Mission: Cluster top pixels, mask claims/protected areas, rank targets.
+
+Agent 7: Memo Agent
+    Mission: Generate target memo templates and figures.
+
+Safety:
+    - Agents cannot delete raw data.
+    - Agents cannot overwrite outputs without versioning.
+    - Agents must log every generated file.
+    - Human approval before running long jobs.
+
+============================================================
+17. PROJECT CONFIG EXAMPLE
+============================================================
+
+project:
+  name: GeoArb_Finland
+  country: Finland
+  region: Central Lapland Greenstone Belt
+  deposit_model: Orogenic Gold
+  crs: EPSG:3067
+  grid_resolution_m: 250
+
+paths:
+  raw_data: data/raw
+  processed_data: data/processed
+  outputs: outputs
+
+model:
+  algorithms:
+    - random_forest
+    - xgboost
+  validation: spatial_block_cv
+  top_k_thresholds: [1, 5, 10]
+
+features:
+  use_magnetics: true
+  use_gravity: true
+  use_em: true
+  use_radiometrics: true
+  use_till_geochemistry: true
+  use_satellite_context: false
+
+legal:
+  use_tukes_mask: true
+  exclude_protected_areas: true
+  exclude_active_permits: true
+
+commercial:
+  buyer_types:
+    - Nordic-focused juniors
+    - ASX European explorers
+    - prospect generators
+    - adjacent claim holders
+
+============================================================
+18. PERSONAL STRATEGY RECOMMENDATION
+============================================================
+
+Best first move:
+    Build the Finland pipeline, but do not file any reservation until the model passes backtesting and legal masking.
+
+Best mindset:
+    This is not “find gold in 7 days.”
+    This is “build a machine that can identify, falsify, and package target opportunities.”
+
+Best commercial posture:
+    Conservative geology language.
+    No “AI found gold.”
+    Say: “AI-assisted prospectivity ranking identified a structurally plausible orogenic gold target with multi-layer geophysical and geochemical support.”
+
+Best risk control:
+    If the project becomes beautiful maps without legal/partner pathway, kill it and return to compchem.
+
+============================================================
+19. MINIMUM VIABLE OUTPUTS
+============================================================
+
+MVP after 7 days:
+    - working repo
+    - QGIS project
+    - data inventory
+    - feature stack
+    - baseline model
+    - validation report
+    - top 20 target table
+    - top 5 legal/open target candidates
+    - top 3 target memos
+    - buyer list
+    - kill/continue decision
+
+MVP is NOT:
+    - proof of gold
+    - legal advice
+    - mining right
+    - investment guarantee
+
+============================================================
+20. FINAL PROJECT NAME OPTIONS
+============================================================
+
+GeoArb_Finland
+LaplandGold_AI
+SirkkaSignal
+GoldGrid_FI
+AuricML
+OroGEN_AI
+
+Recommended name:
+    GeoArb_Finland
+
+Why:
+    It keeps the project broad enough for Finland-first and later Saudi/other-country branches.
+

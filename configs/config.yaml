@@ -1,0 +1,93 @@
+# =============================================================================
+# GeoArb_Finland — Step 1 configuration
+# AI-assisted Finland gold prospect-generation (legal-availability engine).
+#
+# This config drives the Step 1 scripts. Edit values here rather than hard-coding
+# them in scripts. All spatial work uses EPSG:3067 (ETRS89 / TM35FIN).
+# =============================================================================
+
+project:
+  name: GeoArb_Finland
+  country: Finland
+  region: Central Lapland Greenstone Belt
+  deposit_model: Orogenic Gold
+  crs: "EPSG:3067"          # ETRS89 / TM35FIN — the standard CRS for everything
+
+# -----------------------------------------------------------------------------
+# Paths (relative to repo root). Scripts resolve these against the project root,
+# so you can run scripts from anywhere.
+# -----------------------------------------------------------------------------
+paths:
+  raw: data/raw
+  tukes_zip: data/raw/tukes_zip
+  tukes_extracted: data/raw/tukes_extracted
+  debug: data/raw/debug
+  restrictions: data/raw/restrictions
+  interim: data/interim
+  processed: data/processed
+  outputs: data/outputs
+
+# -----------------------------------------------------------------------------
+# Tukes mining-register map files.
+#
+# Source page (human):
+#   https://tukes.fi/en/mining-ore-prospecting-and-gold-panning/map-files
+# Machine-readable ATOM feed that actually lists the ZIPs (parsed by script 00):
+#   https://tukes.fi/karttatiedostot-rss-atomfeedina?p_p_id=fi_yja_feedbuilder_FeedXmlViewPortlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_cacheability=cacheLevelPage
+#
+# The ZIP file names are dated (e.g. valtaus_2026-06-02.zip) and change over time,
+# so the downloader scrapes the feed instead of hard-coding URLs.
+#
+# `layer_keywords` are the Finnish filename stems we care about. A ZIP is selected
+# if its filename contains any of these keywords.
+# -----------------------------------------------------------------------------
+tukes:
+  base_url: "https://tukes.fi"
+  feed_url: "https://tukes.fi/karttatiedostot-rss-atomfeedina?p_p_id=fi_yja_feedbuilder_FeedXmlViewPortlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_cacheability=cacheLevelPage"
+  # Fallback page if the ATOM feed disappears; the script will scrape it for .zip hrefs.
+  fallback_page_url: "https://tukes.fi/karttatiedostot-rss-atomfeedina"
+  request_timeout_s: 60
+  layer_keywords:
+    - malminetsintavaraus   # exploration reservation  (Malminetsintävaraus)
+    - malminetsinta         # exploration permits      (Malminetsintäluvat)
+    - kaivosalue            # mining-permit area       (Kaivoslupa / Kaivosalue)
+    - kaivospiiri           # mining concession        (Kaivospiiri)
+    - valtaus               # claim                    (Valtaus)
+    - kullanhuuhdonta       # gold panning permit      (Kullanhuuhdonta)
+  # If a ZIP exists in both MIF and SHP/TAB variants, prefer the one whose name
+  # contains this token (we read shapefiles with pyogrio).
+  prefer_format_token: "shp"
+
+# -----------------------------------------------------------------------------
+# Area of interest (AOI) and grid.
+#
+# Default AOI is a broad Central Lapland box in EPSG:3067 covering the greenstone
+# belt from the Kittilä/Ikkari area in the west to Sodankylä in the east, and the
+# Sirkka / Kiistala shear-zone corridor. Tighten these bounds later to focus.
+#
+# Quick orientation (EPSG:3067, approx):
+#   Kittilä town    ~ (380 000, 7 530 000)
+#   Ikkari/Rupert   ~ (385 000, 7 510 000)
+#   Sodankylä       ~ (485 000, 7 480 000)
+# -----------------------------------------------------------------------------
+aoi:
+  # Bounding box in EPSG:3067 metres: [xmin, ymin, xmax, ymax]
+  bounds: [350000, 7450000, 530000, 7620000]
+  cell_size_m: 5000          # 5 km x 5 km default grid cells
+
+# -----------------------------------------------------------------------------
+# Legal-status thresholds for classifying AOI cells by how much of the cell is
+# covered by Tukes rights polygons (taken_overlap_pct = % of cell area taken).
+# -----------------------------------------------------------------------------
+legal_status:
+  open_max_pct: 1.0          # 0   <= pct <= 1   -> open
+  partly_taken_max_pct: 10.0 # 1   <  pct <= 10  -> partly_taken
+  # pct > 10 -> taken
+  # is_clean_open is a stricter flag: True only when pct == 0 exactly.
+
+# -----------------------------------------------------------------------------
+# Demo ranker (Step 1 sanity check only — NOT geology).
+# -----------------------------------------------------------------------------
+demo_rank:
+  random_seed: 42            # reproducible fake scores
+  top_n_in_summary: 20

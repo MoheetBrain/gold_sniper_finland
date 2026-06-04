@@ -1,0 +1,46 @@
+# GeoArb_Finland — pip requirements (alternative to environment.yml).
+#
+# NOTE: geopandas / rasterio / gdal are far easier to install via conda
+# (see environment.yml). This pip file is provided for non-conda users on
+# systems where GDAL is already available. Prefer conda if you can.
+#
+#   pip install -r requirements.txt
+#
+# Standard project CRS: EPSG:3067 (ETRS89 / TM35FIN).
+
+# Geospatial vector
+geopandas
+shapely
+pyogrio
+fiona
+pyproj
+
+# Raster (for Step 2)
+rasterio
+rioxarray
+xarray
+
+# Tabular / numeric
+pandas
+numpy
+scipy
+
+# ML
+scikit-learn
+xgboost
+shap
+
+# Plotting
+matplotlib
+
+# Web scraping / IO
+requests
+beautifulsoup4
+lxml
+
+# Config / utilities
+pyyaml
+tqdm
+
+# Testing
+pytest
