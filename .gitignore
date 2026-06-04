@@ -3,8 +3,15 @@ data/raw/
 data/interim/
 data/processed/
 data/outputs/
+# disposable review snapshot (large .gpkg copies)
+data/qgis_review/
+# archived previous pipeline runs
+data/archive/
 # Keep folder structure markers
 !data/**/.gitkeep
+
+# --- Local editor/agent settings ---
+.claude/settings.local.json
 
 # --- Python ---
 __pycache__/

@@ -6,6 +6,7 @@ scripts stay focused on their actual job. Nothing here is geology-specific.
 """
 from __future__ import annotations
 
+import importlib.util
 import logging
 import sys
 from pathlib import Path
@@ -59,6 +60,20 @@ def ensure_dir(path: str | Path) -> Path:
     p = resolve_path(path)
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+def import_script(module_file: str, name: str | None = None):
+    """
+    Import a sibling pipeline script (whose name may start with a digit) by file.
+
+    Lets one numbered script reuse another's tested functions without renaming.
+    """
+    scripts_dir = Path(__file__).resolve().parent
+    spec = importlib.util.spec_from_file_location(
+        name or Path(module_file).stem, scripts_dir / module_file)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def get_path(cfg: dict, key: str, *, create: bool = False) -> Path:

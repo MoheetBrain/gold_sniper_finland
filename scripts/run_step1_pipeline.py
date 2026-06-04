@@ -34,8 +34,10 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 STEPS = [
     ("00_download_tukes_map_files.py", "Download Tukes map files", False),
     ("01_make_aoi_grid.py", "Build AOI grid", True),
-    ("02_mask_taken_areas.py", "Mask taken areas", True),
+    ("02_mask_taken_areas.py", "Mask taken areas (all-cadastre)", True),
+    ("02c_classify_tukes_status.py", "Classify status -> conservative/strict masks", True),
     ("02b_build_restriction_masks_placeholder.py", "Restriction placeholder", False),
+    ("04_cluster_open_cells.py", "Cluster clean-open cells", False),
     ("03_demo_rank_open_cells.py", "Demo-rank open cells", True),
 ]
 
@@ -127,6 +129,40 @@ def gather_summary(cfg: dict, step_results: list[dict]) -> dict:
             summary["warnings"].append(f"Could not read cell_legal_status.csv: {exc}")
     summary["clean_open_cells"] = clean_open
 
+    # Status-aware (02c) numbers: conservative (== default) vs strict-active-only.
+    def _clean_open_from(csv_name: str) -> int | None:
+        p = outputs / csv_name
+        if not p.exists():
+            return None
+        try:
+            return int(pd.read_csv(p)["is_clean_open"].sum())
+        except Exception:  # noqa: BLE001
+            return None
+    summary["clean_open_conservative"] = _clean_open_from("cell_legal_status_conservative.csv")
+    summary["clean_open_strict_active_only"] = _clean_open_from("cell_legal_status_strict_active_only.csv")
+
+    # How many national rights actually intersect the AOI (vs the national total loaded).
+    try:
+        import geopandas as gpd
+        gpath = processed / "aoi_grid.gpkg"
+        rpath = processed / "tukes_all_rights.gpkg"
+        if gpath.exists() and rpath.exists():
+            aoi = gpd.read_file(gpath, layer="aoi_grid").geometry.union_all()
+            rr = gpd.read_file(rpath)
+            summary["rights_polygons_intersecting_aoi"] = int(rr.intersects(aoi).sum())
+    except Exception as exc:  # noqa: BLE001
+        summary["warnings"].append(f"Could not count AOI-intersecting rights: {exc}")
+
+    # Clean-open clusters (04).
+    clu = outputs / "clean_open_clusters.csv"
+    if clu.exists():
+        try:
+            cdf = pd.read_csv(clu)
+            summary["clean_open_clusters"] = len(cdf)
+            summary["largest_cluster_area_km2"] = float(cdf["area_km2"].max()) if len(cdf) else 0.0
+        except Exception:  # noqa: BLE001
+            pass
+
     # Consistency check: open+partly+taken should equal total.
     parts_sum = summary["open_cells"] + summary["partly_taken_cells"] + summary["taken_cells"]
     if parts_sum != summary["total_cells"]:
@@ -194,15 +230,29 @@ def write_summary_files(cfg: dict, summary: dict) -> tuple[Path, Path]:
     for s in summary["steps"]:
         a(f"| {s['label']} | {s['status']} | {s['returncode']} |")
     a("")
+    a("> ⚠️ **Open under the Tukes cadastre only — NOT yet fully legally open.** These")
+    a("> cells are free of mining reservations/permits/claims, but restriction layers")
+    a("> (Natura 2000, protected areas, Sámi homeland, national parks, water bodies) are")
+    a("> NOT yet applied. Ground is not confirmed pursuable until those masks are added")
+    a("> (see docs/RESTRICTION_DATA_SHOPPING_LIST.md).")
+    a("")
     a("## Key numbers")
     a("")
     a(f"- Tukes files downloaded: **{summary['tukes_files_downloaded']}**")
-    a(f"- Rights polygons loaded: **{summary['rights_polygons_loaded']}**")
+    a(f"- Rights polygons loaded (national cadastre): **{summary['rights_polygons_loaded']}**")
+    if summary.get("rights_polygons_intersecting_aoi") is not None:
+        a(f"- Rights polygons intersecting the AOI: **{summary['rights_polygons_intersecting_aoi']}**")
     a(f"- Total AOI cells: **{summary['total_cells']}**")
-    a(f"- Open cells: **{summary['open_cells']}**")
-    a(f"- Clean-open cells (0% taken): **{summary['clean_open_cells']}**")
+    a(f"- Open cells (Tukes-only, ≤1% taken): **{summary['open_cells']}**")
+    a(f"- Clean-open cells, conservative (0% taken): **{summary['clean_open_cells']}**")
+    if summary.get("clean_open_strict_active_only") is not None:
+        a(f"- Clean-open cells, strict-active-only (exclude active rights only): "
+          f"**{summary['clean_open_strict_active_only']}**")
     a(f"- Partly-taken cells: **{summary['partly_taken_cells']}**")
     a(f"- Taken cells: **{summary['taken_cells']}**")
+    if summary.get("clean_open_clusters") is not None:
+        a(f"- Clean-open clusters: **{summary['clean_open_clusters']}** "
+          f"(largest {summary.get('largest_cluster_area_km2', 0):.0f} km²)")
     a("")
     if summary["tukes_layers"]:
         a("## Tukes layers downloaded")
