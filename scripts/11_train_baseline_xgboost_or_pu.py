@@ -19,6 +19,7 @@ OUTPUTS
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -32,8 +33,10 @@ log = get_logger("11_model")
 
 CANDIDATE_FEATURES = [
     "dist_major_shear", "fault_intersection_density", "dist_key_lithological_contact",
-    "mag_1vd", "mag_low_in_high_proxy", "gravity_gradient",
-    "till_au_clr", "till_as_clr", "till_sb_clr", "till_bi_clr",
+    "mag_1vd", "mag_visual_proxy_low_confidence", "mag_low_in_high_proxy",
+    "gravity_gradient",
+    "till_au_clr", "till_au_log", "till_as_clr", "till_as_log",
+    "till_sb_clr", "till_sb_log", "till_bi_clr",
 ]
 MIN_POSITIVES = 4
 
@@ -85,7 +88,7 @@ def train_oof(df: pd.DataFrame, features: list[str]):
         Xr = rest[features].fillna(X.median())
         rest["model_score"] = final.predict_proba(Xr)[:, 1]
         rest["in_cv"] = False
-    importances = dict(zip(features, final.feature_importances_.round(4)))
+    importances = {f: float(v) for f, v in zip(features, final.feature_importances_.round(4))}
     scores = pd.concat([lab[["cell_id", "model_score", "in_cv"]],
                         rest[["cell_id", "model_score", "in_cv"]]], ignore_index=True)
     return scores, importances, n_pos, n_splits
@@ -100,6 +103,7 @@ def main() -> int:
               "Minimal XGBoost (PU-style) with spatial-block out-of-fold scoring. No deep",
               "learning. OOF scores feed the baseline comparison in 11b.", ""]
     status_any = False
+    model_meta = {}
     for gname in ["clgb_grid_2km", "clgb_grid_1km"]:
         size = gname.split("_")[-1]
         try:
@@ -107,9 +111,11 @@ def main() -> int:
         except FileNotFoundError:
             continue
         real = [f for f in CANDIDATE_FEATURES if f in df and df[f].notna().any()]
+        coverage = {f: round(float(df[f].notna().mean()), 4) for f in real}
         n_pos = int((df["role"] == "positive").sum())
         report += [f"## {gname}", "",
                    f"- Real features used: {real or 'NONE'}",
+                   f"- Feature coverage: {coverage}",
                    f"- Positive cells: {n_pos}"]
         if len(real) < 2 or n_pos < MIN_POSITIVES:
             report += [f"- **RESULT: insufficient data to train** "
@@ -120,20 +126,48 @@ def main() -> int:
             pd.DataFrame({"cell_id": df["cell_id"], "model_score": np.nan,
                           "in_cv": False}).to_parquet(
                 processed / f"model_scores_{size}.parquet", index=False)
+            model_meta[size] = {
+                "trained": False,
+                "features": real,
+                "feature_coverage": coverage,
+                "feature_importances": {},
+                "positive_cells": n_pos,
+                "reason": "insufficient data",
+            }
             continue
         scores, imp, n_pos, n_splits = train_oof(df, real)
         scores.to_parquet(processed / f"model_scores_{size}.parquet", index=False)
         status_any = True
+        total_imp = float(sum(imp.values()))
+        top_feature = max(imp, key=imp.get) if imp else None
+        top_fraction = float(imp[top_feature] / total_imp) if top_feature and total_imp > 0 else 0.0
+        single_signal = bool(top_fraction >= 0.75)
+        model_meta[size] = {
+            "trained": True,
+            "features": real,
+            "feature_coverage": coverage,
+            "feature_importances": imp,
+            "positive_cells": n_pos,
+            "spatial_block_folds": n_splits,
+            "top_feature": top_feature,
+            "top_feature_importance_fraction": round(top_fraction, 4),
+            "single_signal_hallucination": single_signal,
+        }
         report += [f"- Spatial-block folds: {n_splits}",
                    f"- Feature importances: {imp}",
+                   f"- Top feature importance fraction: {top_feature}={top_fraction:.2f}",
+                   f"- single_signal_hallucination: {single_signal}",
                    f"- OOF scores written for {int(scores['in_cv'].sum())} labelled cells.", ""]
         log.info("%s: trained (features=%d, positives=%d, folds=%d)",
                  gname, len(real), n_pos, n_splits)
 
+    (outputs / "STEP2_MODEL_FEATURE_IMPORTANCE.json").write_text(
+        json.dumps(model_meta, indent=2), encoding="utf-8"
+    )
     report += ["## Caveat",
-               "- With ~8 positives and 3 structure/lithology-only features, the model has",
-               "  little to learn beyond 'near a fault'. Treat scores as indicative; the",
-               "  decisive question is whether it beats distance-to-fault (see 11b).", ""]
+               "- Positive labels are few, so spatial-block metrics remain high-variance.",
+               "- The decisive question is whether the model beats distance-to-fault (see 11b).",
+               "- No score is a gold target; scores are modelling-candidate evidence only.", ""]
     (outputs / "STEP2_MODEL_REPORT.md").write_text("\n".join(report), encoding="utf-8")
     log.info("Wrote STEP2_MODEL_REPORT.md (trained=%s)", status_any)
     return 0

@@ -1,29 +1,29 @@
 """
-06 — Build the minimal 10-feature CLGB orogenic-gold stack.
+06 - Build the minimal CLGB orogenic-gold feature stack.
 
-THE 10 FEATURES (built where data exists, NULL + reported where it does not)
-    1  dist_major_shear            distance to nearest GTK structure (fault/shear)   [REAL]
-    2  fault_intersection_density  # structure intersections within a radius          [REAL]
-    3  dist_key_lithological_contact distance to nearest bedrock-unit contact         [REAL]
-    4  mag_1vd                     1st vertical derivative of magnetics               [NULL — no data]
-    5  mag_low_in_high_proxy       magnetic low inside regional high (alteration)     [NULL — no data]
-    6  gravity_gradient            horizontal gravity gradient                        [NULL — no data]
-    7  till_au_clr                 CLR-transformed till Au                            [NULL — no data]
-    8  till_as_clr                 CLR-transformed till As                            [NULL — no data]
-    9  till_sb_clr                 CLR-transformed till Sb                            [NULL — no data]
-    10 till_bi_clr                 CLR-transformed till Bi                            [NULL — no data]
+Core feature slots for Step 2.2A:
+    1  dist_major_shear
+    2  fault_intersection_density
+    3  dist_key_lithological_contact
+    4  mag_1vd OR mag_visual_proxy_low_confidence
+    5  mag_low_in_high_proxy OR null if not defensible
+    6  gravity_gradient
+    7  till_au_clr OR till_au_log
+    8  till_as_clr OR till_as_log
+    9  till_sb_clr OR till_sb_log
+    10 till_bi_clr optional/null
 
-ANTI-HALLUCINATION: missing datasets are written as NaN columns and reported, never
-fabricated. The 1:1,000,000-scale GTK structure/bedrock layers are coarse — good for
-*major* shear distance, weak for fine contacts; this is flagged in the report.
+Missing datasets are written as NaN columns and reported. Visual-only magnetic
+products are not silently promoted to numeric geophysics.
 
-OUTPUTS
+Outputs
     data/processed/feature_stack_minimal_2km.parquet
     data/processed/feature_stack_minimal_1km.parquet
     data/outputs/STEP2_FEATURE_STACK_REPORT.md
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -33,41 +33,53 @@ import pandas as pd
 from scipy.spatial import cKDTree
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import get_logger, get_path, load_config, resolve_path  # noqa: E402
+from _common import get_logger, get_path, load_config  # noqa: E402
 
 log = get_logger("06_features")
 
-FEATURE_ORDER = [
-    "dist_major_shear", "fault_intersection_density", "dist_key_lithological_contact",
-    "mag_1vd", "mag_low_in_high_proxy", "gravity_gradient",
-    "till_au_clr", "till_as_clr", "till_sb_clr", "till_bi_clr",
+DENSITY_RADIUS_M = 5000
+
+CORE_FEATURES = [
+    "dist_major_shear",
+    "fault_intersection_density",
+    "dist_key_lithological_contact",
+    "mag_1vd",
+    "mag_visual_proxy_low_confidence",
+    "mag_low_in_high_proxy",
+    "gravity_gradient",
+    "till_au_clr",
+    "till_au_log",
+    "till_as_clr",
+    "till_as_log",
+    "till_sb_clr",
+    "till_sb_log",
+    "till_bi_clr",
 ]
-DENSITY_RADIUS_M = 5000  # radius for fault-intersection density
+LOW_CONFIDENCE_FEATURES = {"mag_visual_proxy_low_confidence"}
+TILL_VARIANT_PREFIXES = ("till_au_", "till_as_", "till_sb_")
 
 
 def line_intersection_points(lines: gpd.GeoDataFrame) -> np.ndarray:
-    """Return Nx2 array of points where distinct structure lines cross."""
     from itertools import combinations
-    from shapely.geometry import Point, MultiPoint
+    from shapely.geometry import MultiPoint, Point
+
     geoms = list(lines.geometry)
     pts = []
     for a, b in combinations(geoms, 2):
-        if a.intersects(b):
-            inter = a.intersection(b)
-            if inter.is_empty:
-                continue
-            if isinstance(inter, Point):
-                pts.append((inter.x, inter.y))
-            elif isinstance(inter, MultiPoint):
-                pts.extend((p.x, p.y) for p in inter.geoms)
-            # crossings that are lines (overlapping) are ignored as not "intersections"
+        if not a.intersects(b):
+            continue
+        inter = a.intersection(b)
+        if inter.is_empty:
+            continue
+        if isinstance(inter, Point):
+            pts.append((inter.x, inter.y))
+        elif isinstance(inter, MultiPoint):
+            pts.extend((p.x, p.y) for p in inter.geoms)
     return np.array(pts) if pts else np.empty((0, 2))
 
 
-def build_features(grid: gpd.GeoDataFrame, structures, bedrock, cfg) -> pd.DataFrame:
-    """Compute the 10-feature table for one grid (centroid-based distances)."""
-    cents = gpd.GeoSeries(gpd.points_from_xy(grid["centroid_x"], grid["centroid_y"]),
-                          crs=grid.crs)
+def build_base_features(grid: gpd.GeoDataFrame, structures, bedrock) -> pd.DataFrame:
+    cents = gpd.GeoSeries(gpd.points_from_xy(grid["centroid_x"], grid["centroid_y"]), crs=grid.crs)
     df = pd.DataFrame({
         "cell_id": grid["cell_id"].values,
         "centroid_x": grid["centroid_x"].values,
@@ -77,113 +89,242 @@ def build_features(grid: gpd.GeoDataFrame, structures, bedrock, cfg) -> pd.DataF
         "grid_size_m": grid.get("grid_size_m"),
     })
 
-    # 1. dist_major_shear
     if structures is not None and not structures.empty:
-        sunion = structures.geometry.union_all()
-        df["dist_major_shear"] = cents.distance(sunion).round(1).values
+        df["dist_major_shear"] = cents.distance(structures.geometry.union_all()).round(1).values
     else:
         df["dist_major_shear"] = np.nan
 
-    # 2. fault_intersection_density (count of crossings within DENSITY_RADIUS_M)
     if structures is not None and len(structures) > 1:
         ipts = line_intersection_points(structures)
         if len(ipts):
             tree = cKDTree(ipts)
             cc = np.c_[grid["centroid_x"].values, grid["centroid_y"].values]
-            df["fault_intersection_density"] = [len(tree.query_ball_point(p, DENSITY_RADIUS_M))
-                                                for p in cc]
+            df["fault_intersection_density"] = [
+                len(tree.query_ball_point(p, DENSITY_RADIUS_M)) for p in cc
+            ]
         else:
             df["fault_intersection_density"] = 0
     else:
         df["fault_intersection_density"] = np.nan
 
-    # 3. dist_key_lithological_contact (distance to bedrock unit boundaries)
     if bedrock is not None and not bedrock.empty:
-        contacts = bedrock.geometry.boundary.union_all()
-        df["dist_key_lithological_contact"] = cents.distance(contacts).round(1).values
+        df["dist_key_lithological_contact"] = cents.distance(
+            bedrock.geometry.boundary.union_all()
+        ).round(1).values
     else:
         df["dist_key_lithological_contact"] = np.nan
-
-    # 4-10. Missing datasets -> explicit NaN columns.
-    for col in ["mag_1vd", "mag_low_in_high_proxy", "gravity_gradient",
-                "till_au_clr", "till_as_clr", "till_sb_clr", "till_bi_clr"]:
-        df[col] = np.nan
-
     return df
 
 
-def run_for_grid(cfg, grid_path: Path, structures, bedrock, out_path: Path) -> dict:
+def merge_optional(df: pd.DataFrame, path: Path, columns: list[str], provenance: dict,
+                   source_label: str) -> pd.DataFrame:
+    if not path.exists():
+        for col in columns:
+            if col not in df:
+                df[col] = np.nan
+            provenance[col] = f"NULL - missing {path.name}"
+        return df
+
+    src = pd.read_parquet(path)
+    keep = ["cell_id"] + [c for c in src.columns if c in columns or c.startswith(TILL_VARIANT_PREFIXES)]
+    df = df.merge(src[keep], on="cell_id", how="left")
+    for col in columns:
+        if col not in df:
+            df[col] = np.nan
+        if df[col].notna().any():
+            provenance[col] = source_label
+        else:
+            provenance[col] = f"NULL - {source_label} produced no defensible values"
+    return df
+
+
+def classify_features(df: pd.DataFrame) -> dict:
+    status = {}
+    for col in CORE_FEATURES:
+        if col not in df:
+            df[col] = np.nan
+        has_data = bool(df[col].notna().any())
+        if has_data and col in LOW_CONFIDENCE_FEATURES:
+            status[col] = "LOW_CONFIDENCE_PROXY"
+        elif has_data:
+            status[col] = "REAL"
+        else:
+            status[col] = "NULL"
+    return status
+
+
+def run_for_grid(name: str, grid_path: Path, structures, bedrock, processed: Path) -> dict:
     grid = gpd.read_file(grid_path)
-    df = build_features(grid, structures, bedrock, cfg)
+    df = build_base_features(grid, structures, bedrock)
+    provenance = {
+        "dist_major_shear": "GTK structures (1:1M)",
+        "fault_intersection_density": "GTK structures (1:1M)",
+        "dist_key_lithological_contact": "GTK bedrock boundaries (1:1M)",
+    }
+
+    if name == "2km":
+        df = merge_optional(
+            df,
+            processed / "magnetics_features_2km.parquet",
+            ["mag_1vd", "mag_visual_proxy_low_confidence", "mag_low_in_high_proxy"],
+            provenance,
+            "local GTK aeromagnetic ECW validation/processing",
+        )
+        df = merge_optional(
+            df,
+            processed / "gravity_features_2km.parquet",
+            ["gravity_gradient"],
+            provenance,
+            "local Bouguer BA_FIN.XYZ gradient sampled to 2 km grid",
+        )
+        df = merge_optional(
+            df,
+            processed / "till_features_au_as_sb_2km.parquet",
+            ["till_au_clr", "till_au_log", "till_as_clr", "till_as_log",
+             "till_sb_clr", "till_sb_log", "till_bi_clr"],
+            provenance,
+            "GTK till geochemistry supraregional Au-As-Sb ablation",
+        )
+    else:
+        for col in CORE_FEATURES:
+            if col not in df:
+                df[col] = np.nan
+                provenance[col] = "NULL - processor currently built only for 2 km grid"
+
+    status = classify_features(df)
+    out_path = processed / f"feature_stack_minimal_{name}.parquet"
     df.to_parquet(out_path, index=False)
+    coverage = {f: float(df[f].notna().mean()) for f in CORE_FEATURES}
     log.info("Wrote %s (%d cells)", out_path.name, len(df))
-    coverage = {f: float(df[f].notna().mean()) for f in FEATURE_ORDER}
-    return {"n_cells": len(df), "coverage": coverage, "df": df}
+    return {"df": df, "status": status, "coverage": coverage, "provenance": provenance}
+
+
+def _feature_slot_status(status: dict) -> list[tuple[str, str]]:
+    mag_slot = (
+        "mag_1vd OR mag_visual_proxy_low_confidence",
+        "REAL" if status.get("mag_1vd") == "REAL" else
+        "LOW_CONFIDENCE_PROXY" if status.get("mag_visual_proxy_low_confidence") == "LOW_CONFIDENCE_PROXY"
+        else "NULL",
+    )
+    low_slot = ("mag_low_in_high_proxy", status.get("mag_low_in_high_proxy", "NULL"))
+    gravity = ("gravity_gradient", status.get("gravity_gradient", "NULL"))
+    au = ("till_au_clr OR till_au_log",
+          "REAL" if status.get("till_au_clr") == "REAL" or status.get("till_au_log") == "REAL" else "NULL")
+    arsenic = ("till_as_clr OR till_as_log",
+               "REAL" if status.get("till_as_clr") == "REAL" or status.get("till_as_log") == "REAL" else "NULL")
+    antimony = ("till_sb_clr OR till_sb_log",
+                "REAL" if status.get("till_sb_clr") == "REAL" or status.get("till_sb_log") == "REAL" else "NULL")
+    bi = ("till_bi_clr (optional)", "OPTIONAL_NULL" if status.get("till_bi_clr") == "NULL" else status.get("till_bi_clr"))
+    return [
+        ("dist_major_shear", status.get("dist_major_shear", "NULL")),
+        ("fault_intersection_density", status.get("fault_intersection_density", "NULL")),
+        ("dist_key_lithological_contact", status.get("dist_key_lithological_contact", "NULL")),
+        mag_slot,
+        low_slot,
+        gravity,
+        au,
+        arsenic,
+        antimony,
+        bi,
+    ]
 
 
 def main() -> int:
     cfg = load_config()
+    raw = get_path(cfg, "raw")
     processed = get_path(cfg, "processed", create=True)
     outputs = get_path(cfg, "outputs", create=True)
-    raw = get_path(cfg, "raw")
 
-    def _load(p):
-        fp = raw / p
-        return gpd.read_file(fp) if fp.exists() else None
+    def _load(rel):
+        path = raw / rel
+        return gpd.read_file(path) if path.exists() else None
+
     structures = _load("gtk/structures.gpkg")
     bedrock = _load("gtk/bedrock.gpkg")
 
-    grids = {"2km": outputs / "clgb_grid_2km.gpkg", "1km": outputs / "clgb_grid_1km.gpkg"}
-    results = {}
-    for name, gp in grids.items():
-        if not gp.exists():
-            log.warning("Grid missing: %s — run 04b first.", gp)
-            continue
-        out = processed / f"feature_stack_minimal_{name}.parquet"
-        results[name] = run_for_grid(cfg, gp, structures, bedrock, out)
-
-    # --- Report ---
-    real = [f for f in FEATURE_ORDER if results and
-            results[next(iter(results))]["coverage"].get(f, 0) > 0]
-    missing = [f for f in FEATURE_ORDER if f not in real]
-    L = ["# Step 2 Feature Stack Report", "",
-         f"Built the minimal 10-feature CLGB orogenic-gold stack on "
-         f"{', '.join(results)} grid(s).", "",
-         "## Feature availability", "",
-         "| # | feature | status | source |",
-         "|---|---------|--------|--------|"]
-    src = {
-        "dist_major_shear": "GTK structures (1:1M)",
-        "fault_intersection_density": "GTK structures (1:1M)",
-        "dist_key_lithological_contact": "GTK bedrock (1:1M)",
-        "mag_1vd": "— (magnetics not available)",
-        "mag_low_in_high_proxy": "— (magnetics not available)",
-        "gravity_gradient": "— (gravity not available)",
-        "till_au_clr": "— (till geochem not available)",
-        "till_as_clr": "— (till geochem not available)",
-        "till_sb_clr": "— (till geochem not available)",
-        "till_bi_clr": "— (till geochem not available)",
+    grids = {
+        "2km": outputs / "clgb_grid_2km.gpkg",
+        "1km": outputs / "clgb_grid_1km.gpkg",
     }
-    for i, f in enumerate(FEATURE_ORDER, 1):
-        status = "✅ REAL" if f in real else "❌ NULL"
-        L.append(f"| {i} | `{f}` | {status} | {src[f]} |")
-    L += ["", f"**Real features: {len(real)}/10. Missing: {len(missing)}/10.**", "",
-          "## Coverage (non-null fraction)", ""]
-    for name, r in results.items():
-        L.append(f"- **{name}** ({r['n_cells']} cells): " +
-                 ", ".join(f"{k}={v:.0%}" for k, v in r["coverage"].items() if v > 0))
-    L += ["", "## Limitations (read loudly)",
-          "- Only **3 of 10** features are real this run (structure ×2, lithology ×1).",
-          "- The 7 missing features (magnetics ×2, gravity, till ×4) are the geophysical",
-          "  and geochemical signals that make orogenic-gold targeting credible. Until they",
-          "  are added, the model CANNOT demonstrate multi-layer convergence and any ranking",
-          "  is structure/lithology-only.",
-          "- GTK structure/bedrock are **1:1,000,000** scale — appropriate for *major* shear",
-          "  proximity, too coarse for detailed contacts/second-order splays.",
-          "- Add magnetics/gravity/till (see STEP2_DATA_AUDIT.md) then re-run this script;",
-          "  the NULL columns fill in automatically.", ""]
-    (outputs / "STEP2_FEATURE_STACK_REPORT.md").write_text("\n".join(L), encoding="utf-8")
-    log.info("Real features: %d/10 (%s). Wrote feature report.", len(real), ", ".join(real))
+    results = {}
+    for name, path in grids.items():
+        if path.exists():
+            results[name] = run_for_grid(name, path, structures, bedrock, processed)
+        else:
+            log.warning("Grid missing: %s", path)
+
+    if not results:
+        log.error("No grids available; run 04b first.")
+        return 2
+
+    primary = results.get("2km") or next(iter(results.values()))
+    slot_status = _feature_slot_status(primary["status"])
+    real_count = sum(1 for _, s in slot_status if s == "REAL")
+    low_count = sum(1 for _, s in slot_status if s == "LOW_CONFIDENCE_PROXY")
+    null_count = sum(1 for _, s in slot_status if s == "NULL")
+    optional_null_count = sum(1 for _, s in slot_status if s == "OPTIONAL_NULL")
+    sufficient = real_count >= 6 and primary["status"].get("gravity_gradient") == "REAL" and (
+        primary["status"].get("till_au_clr") == "REAL" or primary["status"].get("till_au_log") == "REAL"
+    )
+
+    meta = {
+        "real_features_count": real_count,
+        "low_confidence_proxy_features_count": low_count,
+        "null_features_count": null_count,
+        "optional_null_features_count": optional_null_count,
+        "feature_quality_sufficient_for_validation": bool(sufficient),
+        "slot_status": dict(slot_status),
+        "provenance": primary["provenance"],
+    }
+    (outputs / "STEP2_FEATURE_STACK_METADATA.json").write_text(
+        json.dumps(meta, indent=2), encoding="utf-8"
+    )
+
+    lines = [
+        "# Step 2 Feature Stack Report",
+        "",
+        "Built the Step 2.2A CLGB feature stack with explicit nulls and provenance.",
+        "",
+        "## Core Feature Availability",
+        "",
+        "| # | feature slot | status | provenance | coverage |",
+        "|---|--------------|--------|------------|----------|",
+    ]
+    for i, (feature, stat) in enumerate(slot_status, 1):
+        if " OR " in feature:
+            parts = [p.strip() for p in feature.split(" OR ")]
+            cov = max(primary["coverage"].get(p, 0.0) for p in parts)
+            prov = "; ".join(primary["provenance"].get(p, "") for p in parts if primary["provenance"].get(p))
+        else:
+            cov = primary["coverage"].get(feature.replace(" (optional)", ""), 0.0)
+            prov = primary["provenance"].get(feature.replace(" (optional)", ""), "")
+        lines.append(f"| {i} | `{feature}` | {stat} | {prov} | {cov:.1%} |")
+
+    lines += [
+        "",
+        "## Counts",
+        "",
+        f"- Real features: {real_count}",
+        f"- Low-confidence proxy features: {low_count}",
+        f"- Null features: {null_count}",
+        f"- Optional/null features: {optional_null_count}",
+        f"- Feature quality sufficient for validation: {'YES' if sufficient else 'PARTIAL'}",
+        "",
+        "## Notes",
+        "",
+        "- Bi is no longer required for this interim run and remains optional/null.",
+        "- Magnetics is visual-only/unreadable in this environment, so no numeric magnetic "
+        "features were fabricated.",
+        "- Gravity is real but regional: Bouguer XYZ, 2.5 km source grid, sampled to 2 km cells.",
+        "- Till Au/As/Sb are real but sparse because CLR uses only till samples containing all "
+        "three markers.",
+        "",
+    ]
+    (outputs / "STEP2_FEATURE_STACK_REPORT.md").write_text("\n".join(lines), encoding="utf-8")
+    log.info(
+        "Feature counts: real=%d low_conf=%d null=%d optional_null=%d",
+        real_count, low_count, null_count, optional_null_count,
+    )
     return 0
 
 

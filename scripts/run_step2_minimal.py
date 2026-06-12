@@ -33,17 +33,55 @@ SCRIPTS = Path(__file__).resolve().parent
 _m02 = import_script("02_mask_taken_areas.py", "m02")
 _m02c = import_script("02c_classify_tukes_status.py", "m02c")
 
-STEPS = ["05_load_gtk_layers.py", "06_build_minimal_feature_stack.py",
+STEPS = ["05_load_gtk_layers.py", "21_validate_local_geophysics.py",
+         "06c_process_magnetics.py", "06d_process_gravity.py",
+         "19_build_interim_till_features_au_as_sb.py", "06_build_minimal_feature_stack.py",
          "07_build_clgb_positive_labels.py", "08_build_unlabelled_background.py",
          "09_make_spatial_blocks.py", "10_distance_to_fault_baseline.py",
          "11_train_baseline_xgboost_or_pu.py", "11b_topk_capture_metrics.py",
-         "11c_till_shift_ablation.py", "04c_build_restriction_masks.py"]
+         "04c_build_restriction_masks.py"]
 
 
 def _norm(s: pd.Series) -> pd.Series:
     s = s.astype(float)
     lo, hi = s.min(), s.max()
     return (s - lo) / (hi - lo) if hi > lo else pd.Series(0.0, index=s.index)
+
+
+def _component_average(df: pd.DataFrame, cols: list[str]) -> pd.Series:
+    valid = [c for c in cols if c in df.columns and df[c].notna().any()]
+    if not valid:
+        return pd.Series(np.nan, index=df.index)
+    return pd.concat([_norm(df[c]) for c in valid], axis=1).mean(axis=1).round(4)
+
+
+def _weighted_composite(df: pd.DataFrame, weights: dict[str, float]) -> pd.Series:
+    num = pd.Series(0.0, index=df.index)
+    den = pd.Series(0.0, index=df.index)
+    for col, weight in weights.items():
+        if col not in df.columns:
+            continue
+        valid = df[col].notna()
+        num.loc[valid] += df.loc[valid, col].astype(float) * weight
+        den.loc[valid] += weight
+    out = num / den.replace(0, np.nan)
+    return out.round(4)
+
+
+def _till_score(df: pd.DataFrame, label: str) -> pd.Series:
+    cols = []
+    for element in ["au", "as", "sb"]:
+        for suffix in ["clr", "log"]:
+            col = f"till_{element}_{suffix}_{label}"
+            if col in df.columns:
+                cols.append(col)
+    if label == "raw" and not cols:
+        for element in ["au", "as", "sb"]:
+            for suffix in ["clr", "log"]:
+                col = f"till_{element}_{suffix}"
+                if col in df.columns:
+                    cols.append(col)
+    return _component_average(df, cols)
 
 
 def main(run_steps: bool = True) -> int:
@@ -96,18 +134,32 @@ def main(run_steps: bool = True) -> int:
         0.4 * _norm(df["fault_intersection_density"].fillna(0))
     ).round(4)
     df["lithology_score"] = _norm(1.0 / (1.0 + df["dist_key_lithological_contact"] / 1000.0)).round(4)
-    df["geophysics_score"] = np.nan          # no magnetics/gravity
-    for c in ["till_geochem_score_raw", "till_geochem_score_shifted_500m",
-              "till_geochem_score_shifted_1km", "till_geochem_score_shifted_2km"]:
-        df[c] = np.nan                        # no till geochemistry
-    df["glacial_correction_confidence"] = "n/a (no till data)"
+    df["geophysics_score"] = _component_average(
+        df,
+        ["mag_1vd", "mag_visual_proxy_low_confidence", "mag_low_in_high_proxy",
+         "gravity_gradient"],
+    )
+    df["till_geochem_score_raw"] = _till_score(df, "raw")
+    df["till_geochem_score_shifted_500m"] = _till_score(df, "shift_500m")
+    df["till_geochem_score_shifted_1km"] = _till_score(df, "shift_1km")
+    df["till_geochem_score_shifted_2km"] = _till_score(df, "shift_2km")
+    has_till = df["till_geochem_score_raw"].notna().any()
+    df["glacial_correction_confidence"] = np.where(
+        has_till, "provisional_ablation_sparse_till", "n/a (no till data)"
+    )
     df["distance_to_major_shear"] = df["dist_major_shear"].round(1)
     df["baseline_score"] = df["score_distfault"].round(4)
     df["model_score"] = df["model_score"].round(4)
     df["model_minus_baseline"] = (df["model_score"] - df["baseline_score"]).round(4)
 
-    # Transparent geology composite used for ordering (structure + lithology only).
-    df["geology_composite"] = (0.6 * df["structural_score"] + 0.4 * df["lithology_score"]).round(4)
+    # Transparent geology composite used for ordering; weights are renormalized per cell
+    # when sparse till values are absent.
+    df["geology_composite"] = _weighted_composite(df, {
+        "structural_score": 0.35,
+        "lithology_score": 0.20,
+        "geophysics_score": 0.25,
+        "till_geochem_score_raw": 0.20,
+    })
     df["topk_percentile"] = (df["geology_composite"].rank(pct=True) * 100).round(1)
 
     # --- Validation verdict drives honesty of statuses ---
@@ -117,18 +169,30 @@ def main(run_steps: bool = True) -> int:
         verdict = json.loads(vj.read_text())
     model_beats = bool(verdict.get("model_beats_distfault"))
     enough = bool(verdict.get("enough_data"))
+    magnetics_low_confidence = bool(verdict.get("magnetics_low_confidence"))
+    single_signal = bool(verdict.get("single_signal_hallucination"))
 
     # --- False-positive flags ---
-    real_feats = ["dist_major_shear", "fault_intersection_density", "dist_key_lithological_contact"]
-    n_missing_signal = 7  # geophysics(2)+gravity(1)+till(4)
     def flags(row):
         f = []
         if not model_beats:
             f.append("model_failed_baseline")
-        f.append("no_geophysics"); f.append("no_till_geochem")
+        if magnetics_low_confidence:
+            f.append("magnetics_low_confidence")
+        if single_signal:
+            f.append("single_signal_hallucination")
+        if pd.isna(row.get("mag_1vd", np.nan)):
+            f.append("no_numeric_mag_1vd")
+        if pd.isna(row.get("mag_low_in_high_proxy", np.nan)):
+            f.append("no_defensible_mag_low_in_high")
+        if pd.isna(row.get("gravity_gradient", np.nan)):
+            f.append("no_gravity_gradient")
+        if pd.isna(row.get("till_geochem_score_raw", np.nan)):
+            f.append("no_cell_till_au_as_sb")
         if row["fault_intersection_density"] in (0, np.nan):
             f.append("no_structural_intersection")
-        f.append("single_data_domain(structure+lithology_only)")
+        if not row.get("geophysics_score", np.nan) == row.get("geophysics_score", np.nan):
+            f.append("no_geophysics")
         return ";".join(f)
     df["false_positive_flags"] = df.apply(flags, axis=1)
 
@@ -140,7 +204,8 @@ def main(run_steps: bool = True) -> int:
             return "legally_blocked"
         if not enough:
             return "insufficient_data"
-        # Open & unrestricted, but only structure/lithology and model failed baseline:
+        if model_beats and row["topk_percentile"] >= 90:
+            return "model_supported_review_candidate"
         if row["topk_percentile"] >= 90:
             return "needs_manual_geology_review"
         return "insufficient_data"
@@ -188,9 +253,8 @@ def main(run_steps: bool = True) -> int:
           "## Gates applied",
           "1. Tukes cadastre (conservative): excludes active+pending+cooling-off rights.",
           "2. Restriction mask: Natura 2000, protected/conservation areas, groundwater.",
-          "3. Validation: model FAILED the distance-to-fault gate, so candidates are NOT",
-          "   ranked by model score — they are geology-composite ordered and flagged",
-          "   `needs_manual_geology_review` / `insufficient_data` only.",
+          f"3. Validation verdict: {verdict.get('verdict', 'unknown')}. Candidates are",
+          "   geology-composite ordered and flagged; no output is a gold target.",
           "",
           "## What still blocks 'legally available'",
           "- Restriction set lacks Sámi Homeland, national parks/wilderness, surface water",

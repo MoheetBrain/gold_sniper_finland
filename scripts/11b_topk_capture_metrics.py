@@ -109,6 +109,42 @@ def main() -> int:
         result["verdict"] = "PASS (model beats distance-to-fault)" if beats else \
                             "FAIL (model does NOT beat distance-to-fault)"
     result["strong_pass_benchmark_top5_ge_0.8"] = bool(m5 >= 0.8)
+    result["model_beats_distfault_topk"] = {
+        f"top{k}pct": bool(result["capture"]["model_xgb_oof"][f"top{k}pct"] >
+                           result["capture"]["baseline_distfault"][f"top{k}pct"])
+        for k in KS
+    }
+
+    # Honesty flags requested for Step 2.2A.
+    model_meta_path = outputs / "STEP2_MODEL_FEATURE_IMPORTANCE.json"
+    model_meta = {}
+    if model_meta_path.exists():
+        try:
+            model_meta = json.loads(model_meta_path.read_text(encoding="utf-8")).get(size, {})
+        except Exception:  # noqa: BLE001
+            model_meta = {}
+    result["single_signal_hallucination"] = bool(
+        model_meta.get("single_signal_hallucination", False)
+    )
+    result["single_signal_top_feature"] = model_meta.get("top_feature")
+    result["single_signal_top_feature_importance_fraction"] = model_meta.get(
+        "top_feature_importance_fraction"
+    )
+
+    mag_low_confidence = False
+    mag_path = processed / f"magnetics_features_{size}.parquet"
+    if mag_path.exists():
+        try:
+            mag = pd.read_parquet(mag_path)
+            if "magnetics_status" in mag:
+                mag_low_confidence = mag["magnetics_status"].astype(str).str.contains(
+                    "visual|low|unreadable", case=False, regex=True
+                ).any()
+            if "mag_visual_proxy_low_confidence" in mag and mag["mag_visual_proxy_low_confidence"].notna().any():
+                mag_low_confidence = True
+        except Exception:  # noqa: BLE001
+            mag_low_confidence = True
+    result["magnetics_low_confidence"] = bool(mag_low_confidence)
 
     (outputs / "STEP2_VALIDATION.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
 
@@ -132,9 +168,16 @@ def main() -> int:
          f"({n_pos} positives, {len(ev_model)} labelled cells).", "",
          f"## Verdict: **{result['verdict']}**", "",
          f"- Model beats distance-to-fault: **{result['model_beats_distfault']}**",
+         f"- Model beats distance-to-fault by top-k: **{result['model_beats_distfault_topk']}**",
          f"- Strong-pass benchmark (≥80% positives in top 5%): "
          f"**{result['strong_pass_benchmark_top5_ge_0.8']}** "
          f"(benchmark only, not a hard fail)", "",
+         "## Honesty flags", "",
+         f"- `single_signal_hallucination`: **{result['single_signal_hallucination']}** "
+         f"(top feature: {result['single_signal_top_feature']}, fraction: "
+         f"{result['single_signal_top_feature_importance_fraction']})",
+         f"- `magnetics_low_confidence`: **{result['magnetics_low_confidence']}**",
+         "",
          "## Top-k capture (fraction of positives)", "",
          "| method | top 1% | top 5% | top 10% | ROC-AUC |",
          "|--------|--------|--------|---------|---------|"]

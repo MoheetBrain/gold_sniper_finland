@@ -1,0 +1,60 @@
+{
+  "2km": {
+    "trained": true,
+    "features": [
+      "dist_major_shear",
+      "fault_intersection_density",
+      "dist_key_lithological_contact",
+      "gravity_gradient",
+      "till_au_clr",
+      "till_as_clr",
+      "till_sb_clr"
+    ],
+    "feature_coverage": {
+      "dist_major_shear": 1.0,
+      "fault_intersection_density": 1.0,
+      "dist_key_lithological_contact": 1.0,
+      "gravity_gradient": 1.0,
+      "till_au_clr": 0.01,
+      "till_as_clr": 0.01,
+      "till_sb_clr": 0.01
+    },
+    "feature_importances": {
+      "dist_major_shear": 0.3564999997615814,
+      "fault_intersection_density": 0.08209999650716782,
+      "dist_key_lithological_contact": 0.22300000488758087,
+      "gravity_gradient": 0.3384000062942505,
+      "till_au_clr": 0.0,
+      "till_as_clr": 0.0,
+      "till_sb_clr": 0.0
+    },
+    "positive_cells": 8,
+    "spatial_block_folds": 5,
+    "top_feature": "dist_major_shear",
+    "top_feature_importance_fraction": 0.3565,
+    "single_signal_hallucination": false
+  },
+  "1km": {
+    "trained": true,
+    "features": [
+      "dist_major_shear",
+      "fault_intersection_density",
+      "dist_key_lithological_contact"
+    ],
+    "feature_coverage": {
+      "dist_major_shear": 1.0,
+      "fault_intersection_density": 1.0,
+      "dist_key_lithological_contact": 1.0
+    },
+    "feature_importances": {
+      "dist_major_shear": 0.4514000117778778,
+      "fault_intersection_density": 0.2874999940395355,
+      "dist_key_lithological_contact": 0.26109999418258667
+    },
+    "positive_cells": 9,
+    "spatial_block_folds": 5,
+    "top_feature": "dist_major_shear",
+    "top_feature_importance_fraction": 0.4514,
+    "single_signal_hallucination": false
+  }
+}

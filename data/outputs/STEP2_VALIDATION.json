@@ -1,0 +1,46 @@
+{
+  "grid": "2km",
+  "n_eval_cells": 3649,
+  "n_positives": 8,
+  "capture": {
+    "model_xgb_oof": {
+      "top1pct": 0.125,
+      "top5pct": 0.125,
+      "top10pct": 0.125
+    },
+    "baseline_distfault": {
+      "top1pct": 0.0,
+      "top5pct": 0.0,
+      "top10pct": 0.25
+    },
+    "baseline_random": {
+      "top1pct": 0.0,
+      "top5pct": 0.125,
+      "top10pct": 0.25
+    },
+    "ref_distdeposit_leaky": {
+      "top1pct": 1.0,
+      "top5pct": 1.0,
+      "top10pct": 1.0
+    }
+  },
+  "roc_auc": {
+    "model_xgb_oof": 0.798,
+    "baseline_distfault": 0.675,
+    "baseline_random": 0.575,
+    "ref_distdeposit_leaky": 1.0
+  },
+  "model_beats_distfault": true,
+  "enough_data": true,
+  "verdict": "PASS (model beats distance-to-fault)",
+  "strong_pass_benchmark_top5_ge_0.8": false,
+  "model_beats_distfault_topk": {
+    "top1pct": true,
+    "top5pct": true,
+    "top10pct": false
+  },
+  "single_signal_hallucination": false,
+  "single_signal_top_feature": "dist_major_shear",
+  "single_signal_top_feature_importance_fraction": 0.3565,
+  "magnetics_low_confidence": true
+}
