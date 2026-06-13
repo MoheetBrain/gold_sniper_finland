@@ -469,8 +469,8 @@ def part_c(core):
         cross = {
             "atlas_lookup_cell_id": None if a is None else a["cell_id"],
             "qgis_lookup_cell_id": None if q is None else q["cell_id"],
-            "atlas_centroid": None if a is None else [round(a["centroid_x"], 1), round(a["centroid_y"], 1)],
-            "qgis_centroid": None if q is None else [round(q["centroid_x"], 1), round(q["centroid_y"], 1)],
+            "atlas_centroid": None if a is None else [float(a["centroid_x"]), float(a["centroid_y"])],
+            "qgis_centroid": None if q is None else [float(q["centroid_x"]), float(q["centroid_y"])],
         }
         # neighbours by geometry
         cx, cy = float(grow["centroid_x"]), float(grow["centroid_y"])
@@ -717,6 +717,15 @@ def part_e(core):
             short = ", ".join(f"{k}={v}" for k, v in list(keys.items())[:6])
             L.append(f"| {name} | {e.get('matched_rows')} | {e.get('missing')} | "
                      f"{e.get('duplicate')} | {short} |")
+    L += ["", "## Note on the 0-row legacy joins", "",
+          "`cell_legal_status_conservative`, `cell_legal_status_strict_active_only` and "
+          "`cell_restriction_status` are Step-1 products keyed on the **`r{row}_c{col}`** id "
+          "scheme of the original 1,224-cell aoi_grid — a different id namespace from the "
+          "`g2k_#####` CLGB grid. The 0-row result for g2k cells is therefore *expected* and "
+          "is not a broken join or missing data: the authoritative legal/restriction status "
+          "for these cells is carried directly on the numbered grid / lookup "
+          "(both show `legal_status=open`, `restriction_status=clear`) and is re-verified "
+          "spatially in Part F."]
     md(OUT / "CELL_ATTRIBUTE_JOIN_AUDIT.md", "\n".join(L))
     return res
 
