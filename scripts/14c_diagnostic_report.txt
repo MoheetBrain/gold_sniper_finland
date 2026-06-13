@@ -1,0 +1,31 @@
+Diagnostic results for Command Center Maps:
+
+1. CRS Verification:
+   - Target EPSG: 3067 (ETRS89-TM35FIN)
+   - Actual Clusters CRS: EPSG:3067
+   - Actual AOI CRS: EPSG:3067
+   - Status: PASS
+
+2. Boundary Checks:
+   - AOI Easting: 350,000m to 530,000m
+   - AOI Northing: 7,450,000m to 7,620,000m
+   - AOI Extent: 180km x 170km (30,600 km2)
+   - Status: PASS (Correct location for Central Lapland)
+
+3. Area Math Verification:
+   - Target Block ALPHA:
+     - Area (m2): 8,348,000,000
+     - Area (km2): 8,348.0 (Formula: m2 / 1,000,000)
+     - Area (hectares): 834,800.0 (Formula: m2 / 10,000)
+   - Status: PASS (Math is perfectly correct)
+
+4. Centroid & Bounding Box Math:
+   - Extracted dynamically via Shapely's `geom.bounds` and `geom.centroid`.
+   - Verified that all centroids fall within the AOI boundary box.
+   - Example (ECHO): E 435000, N 7496777 (Exactly matches the midpoint of its bounding box).
+   - Status: PASS
+
+5. Data Provenance Notes:
+   - `open_cells.gpkg` represents the 5km x 5km reference cells (25 km2 each).
+   - `clean_open_clusters_2km.gpkg` contains dissolved features originating from the high-resolution 2km grid.
+   - The large area of Target Block ALPHA (8,348 km2) reflects a massive continuous swath of legally available ground without hard restrictions.

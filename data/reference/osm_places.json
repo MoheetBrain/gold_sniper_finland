@@ -1,0 +1,7 @@
+{
+  "_note": "Independent external geocodes from OpenStreetMap Nominatim, cached for reproducible forensic audit. Fetched 2026-06-13. Source: nominatim.openstreetmap.org (ODbL).",
+  "places": {
+    "Levi": {"lat": 67.7844055, "lon": 24.8557289, "osm_type": "node", "osm_id": 164977635, "type": "peak", "display_name": "Levi, Kittila, Lappi, Finland"},
+    "Sirkka": {"lat": 67.8075595, "lon": 24.8055734, "osm_type": "node", "osm_id": 30091297, "type": "town", "display_name": "Sirkka, Kittila, Lappi, Finland"}
+  }
+}

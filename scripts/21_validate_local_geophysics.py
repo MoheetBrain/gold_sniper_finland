@@ -31,6 +31,7 @@ log = get_logger("21_local_geophysics")
 
 GRAVITY_DIR = Path("gtk/gravity")
 MAGNETICS_DIR = Path("gtk/magnetics")
+MAGNETICS_NUMERIC_DIR = Path("gtk/magnetics_numeric")
 GRAVITY_XYZ_CRS = CRS.from_proj4(
     "+proj=tmerc +lat_0=0 +lon_0=21 +k=1 +x_0=1500000 +y_0=0 "
     "+ellps=WGS84 +units=m +no_defs"
@@ -288,6 +289,92 @@ def _validate_xyz(path: Path, clgb_geom) -> dict:
     return row
 
 
+def _validate_generic_numeric_xyz(path: Path, clgb_geom, label: str) -> dict:
+    row = {
+        "path": str(path),
+        "file_type": f"{label} numeric XYZ text grid",
+        "exists": path.exists(),
+        "gdal_rasterio_readable": "NO",
+        "driver": "manual XYZ parser",
+        "crs": "assumed EPSG:3067 unless sidecar metadata says otherwise",
+        "bounds": "",
+        "overlap_clgb_aoi": "UNKNOWN",
+        "overlap_clgb_pct": 0.0,
+        "pixel_resolution": "",
+        "bands": 1,
+        "dtype": "float",
+        "nodata": "",
+        "min": np.nan,
+        "max": np.nan,
+        "mean": np.nan,
+        "numeric_or_display": f"numeric {label} XYZ grid candidate",
+        "suitable_for_modelling": "YES",
+        "visual_only": "NO",
+        "error": "",
+    }
+    try:
+        df = pd.read_csv(path, comment="/", sep=r"\s+", header=None, engine="python")
+        if df.shape[1] < 3:
+            raise ValueError("Expected at least three columns: x y value")
+        data = df.iloc[:, :3].copy()
+        data.columns = ["x", "y", "value"]
+        for col in data.columns:
+            data[col] = pd.to_numeric(data[col], errors="coerce")
+        data = data.dropna()
+        if data.empty:
+            raise ValueError("No numeric x/y/value rows parsed")
+        bounds_3067 = (
+            float(data["x"].min()),
+            float(data["y"].min()),
+            float(data["x"].max()),
+            float(data["y"].max()),
+        )
+        ov, pct = _overlap(bounds_3067, clgb_geom)
+        xs = np.sort(data["x"].unique())
+        ys = np.sort(data["y"].unique())
+        dx = float(np.median(np.diff(xs))) if len(xs) > 1 else np.nan
+        dy = float(np.median(np.diff(ys))) if len(ys) > 1 else np.nan
+        row.update({
+            "gdal_rasterio_readable": "NO; parsed manually",
+            "bounds": tuple(round(v, 3) for v in bounds_3067),
+            "overlap_clgb_aoi": ov,
+            "overlap_clgb_pct": round(pct, 2),
+            "pixel_resolution": f"{dx:g} x {dy:g} m" if np.isfinite(dx) and np.isfinite(dy) else "",
+            "min": float(data["value"].min()),
+            "max": float(data["value"].max()),
+            "mean": float(data["value"].mean()),
+        })
+    except Exception as exc:  # noqa: BLE001
+        row["suitable_for_modelling"] = "NO"
+        row["error"] = f"{type(exc).__name__}: {exc}"
+    return row
+
+
+def _missing_numeric_magnetics_row(path: Path) -> dict:
+    return {
+        "path": str(path),
+        "file_type": "numeric magnetics search directory",
+        "exists": path.exists(),
+        "gdal_rasterio_readable": "NO",
+        "driver": "",
+        "crs": "",
+        "bounds": "",
+        "overlap_clgb_aoi": "UNKNOWN",
+        "overlap_clgb_pct": 0.0,
+        "pixel_resolution": "",
+        "bands": "",
+        "dtype": "",
+        "nodata": "",
+        "min": np.nan,
+        "max": np.nan,
+        "mean": np.nan,
+        "numeric_or_display": "no numeric magnetic grid supplied yet",
+        "suitable_for_modelling": "NO",
+        "visual_only": "NO",
+        "error": "Drop GDAL-readable numeric magnetic anomaly grids into this directory.",
+    }
+
+
 def main() -> int:
     cfg = load_config()
     raw = get_path(cfg, "raw")
@@ -301,14 +388,26 @@ def main() -> int:
         raw / GRAVITY_DIR / "Fenno_Bouguer_FIN_ETRS89_TM35FIN.ecw",
         raw / MAGNETICS_DIR / "aeromagnetic_anomaly_grey_epsg3067.ecw",
     ]
+    mag_numeric_dir = raw / MAGNETICS_NUMERIC_DIR
+    mag_numeric_dir.mkdir(parents=True, exist_ok=True)
+    numeric_candidates = [
+        p for p in sorted(mag_numeric_dir.iterdir())
+        if p.is_file()
+        and p.suffix.lower() not in {".xml", ".aux", ".ovr", ".tfw", ".prj", ".qml", ".gi"}
+    ]
+    candidates.extend(numeric_candidates)
 
     rows = []
     for path in candidates:
         log.info("Validating %s", path)
-        if path.suffix.lower() == ".xyz":
+        if path == raw / GRAVITY_DIR / "BA_FIN.XYZ":
             rows.append(_validate_xyz(path, clgb_geom))
+        elif path.parent == mag_numeric_dir and path.suffix.lower() in {".xyz", ".csv", ".txt"}:
+            rows.append(_validate_generic_numeric_xyz(path, clgb_geom, "magnetic anomaly"))
         else:
             rows.append(_validate_raster(path, clgb_geom))
+    if not numeric_candidates:
+        rows.append(_missing_numeric_magnetics_row(mag_numeric_dir))
 
     df = pd.DataFrame(rows)
     csv_path = outputs / "LOCAL_GEOPHYSICS_VALIDATION.csv"
@@ -358,6 +457,8 @@ def main() -> int:
         "- Magnetics: the ECW metadata says 4 bands, 8-bit Red/Green/Blue/opacity. That is a "
         "rendered greyscale/RGBA display, not a numeric magnetic anomaly grid. It is visual-only "
         "and not suitable for `mag_1vd` or `mag_low_in_high_proxy`.",
+        "- Future numeric magnetics: place GDAL-readable numeric grids under "
+        "`data/raw/gtk/magnetics_numeric/`; this validator will include them automatically.",
         "",
     ]
     report_path = outputs / "LOCAL_GEOPHYSICS_VALIDATION_REPORT.md"
