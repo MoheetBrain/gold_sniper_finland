@@ -36,3 +36,6 @@ Thumbs.db
 # --- QGIS ---
 *.qgz~
 *.qgs~
+
+# TerraMind model (cloned repo + venv)
+terramind/
