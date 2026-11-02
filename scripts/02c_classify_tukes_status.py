@@ -111,8 +111,7 @@ def load_classified_rights(cfg: dict) -> gpd.GeoDataFrame:
 
         # CRS + geometry cleaning identical in spirit to script 02.
         if gdf.crs is None:
-            log.warning("%s has NO CRS — assuming %s", path.name, crs)
-            gdf = gdf.set_crs(crs, allow_override=True)
+            raise ValueError("Source CRS missing; obtain metadata instead of assuming coordinates")
         if str(gdf.crs) != crs:
             gdf = gdf.to_crs(crs)
         gdf = gdf[gdf.geometry.notna() & ~gdf.geometry.is_empty].copy()

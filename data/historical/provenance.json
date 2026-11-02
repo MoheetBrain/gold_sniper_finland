@@ -1,0 +1,23 @@
+[
+  {
+    "file": "data/historical/STEP2_2B_FEATURE_ABLATION.csv",
+    "source_commit": "c272a4b9ffe56c56243a9fde4610d324513d80c4",
+    "source_path": "data/outputs/STEP2_2B_FEATURE_ABLATION.csv",
+    "sha256": "998e5cbe6dfd86c59d2e732b6eb95647e5c45da3aa8cb7849d7f2ac5abf334d8",
+    "transformation": "none; byte-identical aggregate"
+  },
+  {
+    "file": "data/historical/STEP2_MODEL_FEATURE_IMPORTANCE.json",
+    "source_commit": "c272a4b9ffe56c56243a9fde4610d324513d80c4",
+    "source_path": "data/outputs/STEP2_MODEL_FEATURE_IMPORTANCE.json",
+    "sha256": "593ecbc0b1ff2ecef0c61741041ddd4921e9cae40044f885fd5523df86ba0f36",
+    "transformation": "none; byte-identical aggregate"
+  },
+  {
+    "file": "data/historical/STEP2_VALIDATION.json",
+    "source_commit": "c272a4b9ffe56c56243a9fde4610d324513d80c4",
+    "source_path": "data/outputs/STEP2_VALIDATION.json",
+    "sha256": "46e65d7b48ecafca16a13bf7a4809c49e0c87ecb48abd2c983da40dc9c4c672b",
+    "transformation": "none; byte-identical aggregate"
+  }
+]

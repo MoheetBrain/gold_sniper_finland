@@ -1,0 +1,10 @@
+{
+  "source": "Natural Earth admin 0 countries 1:10m",
+  "source_url": "https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/",
+  "terms_url": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "licence": "public domain",
+  "changes": "Selected five countries; topology-preserving simplification at 0.035 degrees. Context only, not legal boundaries.",
+  "source_archive_sha256": "ce1ac7036499a0edd641fbc093cd209a98f96a49d2eca8480aaacad35138a7f6",
+  "source_version": "Inherited archive; upstream version not independently established",
+  "reviewed": "2026-11-02"
+}

@@ -4,7 +4,7 @@
 Evaluates the model's out-of-fold scores against the distance-to-fault baseline
 (the bar to beat), random (the floor), and distance-to-known-deposit (a leaky
 reference ceiling). Metrics on the labelled positive/background set:
-    - top 1% / 5% / 10% area capture of positive cells (the metric that matters)
+    - top 1% / 5% / 10% cell-count capture of positive cells (the metric that matters)
     - ROC-AUC (reported with a small-sample caveat)
 
 HARD GATE
@@ -37,13 +37,7 @@ log = get_logger("11b_metrics")
 KS = [1, 5, 10]
 
 
-def topk_capture(scores: np.ndarray, y: np.ndarray, k_pct: float) -> float:
-    """Fraction of positives falling in the top k% of cells ranked by score."""
-    n = len(scores)
-    n_top = max(1, int(np.ceil(n * k_pct / 100.0)))
-    order = np.argsort(-scores)  # descending
-    top = order[:n_top]
-    return float(y[top].sum() / max(1, y.sum()))
+from _evaluation import topk_capture, capture_tie_bounds
 
 
 def capture_curve(scores, y, grid_pcts):
@@ -76,6 +70,9 @@ def main() -> int:
     ev_model = ev[ev["in_cv"] & ev["model_score"].notna()].copy()
     y = (ev_model["role"] == "positive").astype(int).values
     n_pos = int(y.sum())
+    if len(ev_model) != len(ev) or len(np.unique(y)) != 2:
+        log.error("Incomplete OOF coverage or missing class; refusing misleading evaluation")
+        return 2
 
     methods = {
         "model_xgb_oof": ev_model["model_score"].values,
@@ -85,9 +82,10 @@ def main() -> int:
     }
 
     result = {"grid": size, "n_eval_cells": int(len(ev_model)), "n_positives": n_pos,
-              "capture": {}, "roc_auc": {}}
+              "capture": {}, "roc_auc": {}, "tie_bounds": {}}
     from sklearn.metrics import roc_auc_score
     for name, sc in methods.items():
+        result["tie_bounds"][name] = {f"top{k}pct": capture_tie_bounds(sc,y,k) for k in KS}
         result["capture"][name] = {f"top{k}pct": round(topk_capture(sc, y, k), 3) for k in KS}
         try:
             result["roc_auc"][name] = round(float(roc_auc_score(y, sc)), 3) if n_pos > 0 else None
@@ -156,7 +154,7 @@ def main() -> int:
     for name, sc in methods.items():
         ax.plot(pcts, [topk_capture(sc, y, p) for p in pcts], styles.get(name, "-"), label=name)
     ax.axhline(0.8, color="grey", lw=0.6, ls=":")
-    ax.set_xlabel("top % of ranked area"); ax.set_ylabel("fraction of positives captured")
+    ax.set_xlabel("top % of ranked cells"); ax.set_ylabel("fraction of positives captured")
     ax.set_title(f"Top-k capture ({size}, {n_pos} positives) — OOF spatial CV")
     ax.legend(fontsize=8); ax.grid(alpha=0.3)
     fig.tight_layout(); fig.savefig(outputs / "topk_capture_curves.png", dpi=130)

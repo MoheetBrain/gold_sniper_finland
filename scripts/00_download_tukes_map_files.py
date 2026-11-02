@@ -166,6 +166,10 @@ def extract_zip(zip_path: Path, extract_root: Path) -> Path:
     out_dir = extract_root / zip_path.stem
     out_dir.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_path) as zf:
+        base = out_dir.resolve()
+        for member in zf.infolist():
+            if not (base / member.filename).resolve().is_relative_to(base):
+                raise ValueError("Unsafe archive member path")
         zf.extractall(out_dir)
     log.info("Extracted %s -> %s", zip_path.name, out_dir)
     return out_dir

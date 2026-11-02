@@ -53,7 +53,7 @@ def build_clgb_polygon(cfg: dict) -> gpd.GeoDataFrame:
         log.info("Using REAL GTK bedrock geology: %s", bedrock_path)
         bed = gpd.read_file(bedrock_path)
         if bed.crs is None:
-            bed = bed.set_crs(crs, allow_override=True)
+            raise ValueError("Bedrock CRS missing; obtain source metadata rather than guessing")
         bed = bed.to_crs(crs)
         field = clgb_cfg.get("greenstone_field") or ""
         kws = [k.lower() for k in clgb_cfg.get("greenstone_keywords", [])]

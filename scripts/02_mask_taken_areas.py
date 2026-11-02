@@ -84,10 +84,9 @@ def load_and_clean(path: Path, extract_dir: Path, target_crs: str) -> gpd.GeoDat
         log.warning("Empty layer: %s", path.name)
         return None
 
-    # CRS handling: assume EPSG:3067 if missing, but say so loudly.
+    # Missing CRS is a hard error; never silently relabel coordinates.
     if gdf.crs is None:
-        log.warning("%s has NO CRS — assuming EPSG:3067 (verify this!)", path.name)
-        gdf = gdf.set_crs(target_crs, allow_override=True)
+        raise ValueError("Source CRS missing; obtain metadata instead of assuming coordinates")
     if str(gdf.crs) != target_crs:
         gdf = gdf.to_crs(target_crs)
 

@@ -5,7 +5,7 @@ APPROACH (deliberately minimal, no deep learning)
     Positives = CLGB orogenic-gold cells. Unlabelled background = the "negative" class
     in a PU-style framing (treated as unlabelled, not confirmed barren). We train
     XGBoost and produce honest OUT-OF-FOLD scores using GroupKFold over 20 km spatial
-    blocks (no spatial leakage). A final model trained on all labelled cells scores the
+    blocks (reduced spatial dependence, not proof of independence). A final model trained on all labelled cells scores the
     remaining cells (buffer-excluded etc.) for ranking completeness only.
 
 HONESTY GUARDS
@@ -51,47 +51,20 @@ def load_grid_data(processed: Path, size: str):
 
 
 def train_oof(df: pd.DataFrame, features: list[str]):
-    """GroupKFold OOF probabilities over spatial blocks for the labelled set."""
-    from sklearn.model_selection import GroupKFold
-    from xgboost import XGBClassifier
-
+    """Corrected release implementation; historical metrics have NOT been rerun."""
+    from _evaluation import fit_grouped
     lab = df[df["role"].isin(["positive", "background"])].copy()
-    lab["y"] = (lab["role"] == "positive").astype(int)
-    X = lab[features].fillna(lab[features].median())
-    y = lab["y"].values
-    groups = lab["spatial_block_id"].values
-
-    n_pos = int(y.sum())
-    n_splits = min(5, lab["spatial_block_id"].nunique(), max(2, n_pos))
-    gkf = GroupKFold(n_splits=n_splits)
-    oof = np.full(len(lab), np.nan)
-    spw = max(1.0, (len(y) - n_pos) / max(1, n_pos))
-
-    for tr, te in gkf.split(X, y, groups):
-        if y[tr].sum() == 0:
-            continue  # no positive in this training fold — skip
-        model = XGBClassifier(n_estimators=200, max_depth=3, learning_rate=0.08,
-                              subsample=0.9, colsample_bytree=0.9, eval_metric="logloss",
-                              scale_pos_weight=spw, random_state=42, n_jobs=2)
-        model.fit(X.iloc[tr], y[tr])
-        oof[te] = model.predict_proba(X.iloc[te])[:, 1]
+    oof, final, med, folds = fit_grouped(lab, features)
     lab["model_score"] = oof
     lab["in_cv"] = True
-
-    # Final model on all labelled cells -> score the rest (ranking completeness only).
-    final = XGBClassifier(n_estimators=200, max_depth=3, learning_rate=0.08,
-                         subsample=0.9, colsample_bytree=0.9, eval_metric="logloss",
-                         scale_pos_weight=spw, random_state=42, n_jobs=2)
-    final.fit(X, y)
     rest = df[~df["cell_id"].isin(lab["cell_id"])].copy()
-    if not rest.empty:
-        Xr = rest[features].fillna(X.median())
-        rest["model_score"] = final.predict_proba(Xr)[:, 1]
-        rest["in_cv"] = False
-    importances = {f: float(v) for f, v in zip(features, final.feature_importances_.round(4))}
-    scores = pd.concat([lab[["cell_id", "model_score", "in_cv"]],
-                        rest[["cell_id", "model_score", "in_cv"]]], ignore_index=True)
-    return scores, importances, n_pos, n_splits
+    rest["model_score"] = (final.predict_proba(rest[features].fillna(med))[:,1]
+                           if len(rest) else np.array([],dtype=float))
+    rest["in_cv"] = False
+    imp = {f:float(v) for f,v in zip(features,final.feature_importances_.round(4))}
+    scores = pd.concat([lab[["cell_id","model_score","in_cv"]],
+                        rest[["cell_id","model_score","in_cv"]]],ignore_index=True)
+    return scores,imp,int((lab["role"]=="positive").sum()),len(folds)
 
 
 def main() -> int:

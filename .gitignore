@@ -1,41 +1,20 @@
-# --- Data (never commit raw downloads or large geodata) ---
+# Private research data, generated runs and local environments never belong in the public tree.
 data/raw/
-data/interim/
 data/processed/
+data/interim/
 data/outputs/
-# external reference boundaries cached for the forensic geo-audit (large downloads, ~80 MB)
 data/reference/
-# disposable review snapshot (large .gpkg copies)
-data/qgis_review/
-# archived previous pipeline runs
 data/archive/
-# Keep folder structure markers
-!data/**/.gitkeep
-
-# --- Local editor/agent settings ---
-.claude/settings.local.json
-
-# --- Python ---
-__pycache__/
-*.py[cod]
-*.egg-info/
-.pytest_cache/
-.ipynb_checkpoints/
+runs/
 .venv/
 venv/
-
-# --- Conda ---
-.conda/
-
-# --- OS / editor ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
 .DS_Store
-Thumbs.db
-.idea/
-.vscode/
-
-# --- QGIS ---
-*.qgz~
-*.qgs~
-
-# TerraMind model (cloned repo + venv)
-terramind/
+.env
+.env.*
+!.env.example
+*.pem
+*.key

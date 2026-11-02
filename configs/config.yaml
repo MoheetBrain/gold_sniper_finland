@@ -175,7 +175,7 @@ gold_panning:
 
 # -----------------------------------------------------------------------------
 # GTK open data (script 05). Pulled AOI-clipped from GTK's public ArcGIS REST
-# server (free, CC BY 4.0). `native_wkid` is each service's own CRS; the query
+# server (product-specific rights must be checked; see DATA_SOURCES_AND_LICENSES.md). `native_wkid` is each service's own CRS; the query
 # sends the AOI bbox in that CRS and asks the server to return EPSG:3067 geometry.
 # `out` is relative to data/raw/. kind drives downstream use.
 # -----------------------------------------------------------------------------

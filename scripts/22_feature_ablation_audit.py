@@ -49,10 +49,7 @@ GROUPS = [
 ]
 
 
-def topk_capture(scores: np.ndarray, y: np.ndarray, k_pct: float) -> float:
-    n_top = max(1, int(np.ceil(len(scores) * k_pct / 100.0)))
-    order = np.argsort(-scores)
-    return float(y[order[:n_top]].sum() / max(1, y.sum()))
+from _evaluation import topk_capture
 
 
 def load_data(processed: Path, size: str) -> pd.DataFrame:
@@ -74,80 +71,18 @@ def valid_features(df: pd.DataFrame, candidates: list[str]) -> list[str]:
 
 
 def train_oof(lab: pd.DataFrame, features: list[str]):
-    from sklearn.inspection import permutation_importance
+    from _evaluation import fit_grouped
     from sklearn.metrics import roc_auc_score
-    from sklearn.model_selection import GroupKFold
-    from xgboost import XGBClassifier
-
-    X = lab[features].copy()
-    med = X.median(numeric_only=True)
-    X = X.fillna(med).fillna(0.0)
-    y = (lab["role"] == "positive").astype(int).to_numpy()
-    groups = lab["spatial_block_id"].to_numpy()
-
-    n_pos = int(y.sum())
-    n_splits = min(5, lab["spatial_block_id"].nunique(), max(2, n_pos))
-    gkf = GroupKFold(n_splits=n_splits)
-    oof = np.full(len(lab), np.nan)
-    skipped = 0
-    spw = max(1.0, (len(y) - n_pos) / max(1, n_pos))
-
-    params = dict(
-        n_estimators=200,
-        max_depth=3,
-        learning_rate=0.08,
-        subsample=0.9,
-        colsample_bytree=0.9,
-        eval_metric="logloss",
-        scale_pos_weight=spw,
-        random_state=42,
-        n_jobs=2,
-    )
-    for tr, te in gkf.split(X, y, groups):
-        if y[tr].sum() == 0 or y[tr].sum() == len(tr):
-            skipped += 1
-            continue
-        model = XGBClassifier(**params)
-        model.fit(X.iloc[tr], y[tr])
-        oof[te] = model.predict_proba(X.iloc[te])[:, 1]
-
-    final = XGBClassifier(**params)
-    final.fit(X, y)
-    importances = {f: float(v) for f, v in zip(features, final.feature_importances_.round(5))}
-    perm = {}
-    try:
-        pi = permutation_importance(
-            final,
-            X,
-            y,
-            n_repeats=10,
-            random_state=42,
-            scoring="roc_auc",
-            n_jobs=1,
-        )
-        perm = {
-            f: float(v)
-            for f, v in zip(features, np.round(pi.importances_mean, 5))
-        }
-    except Exception as exc:  # noqa: BLE001
-        perm = {"error": f"{type(exc).__name__}: {exc}"}
-
-    valid = np.isfinite(oof)
-    ev_y = y[valid]
-    ev_scores = oof[valid]
-    auc = None
-    if len(np.unique(ev_y)) == 2:
-        auc = float(roc_auc_score(ev_y, ev_scores))
-    return {
-        "scores": ev_scores,
-        "y": ev_y,
-        "valid_mask": valid,
-        "n_splits": n_splits,
-        "skipped_folds": skipped,
-        "feature_importance": importances,
-        "permutation_importance": perm,
-        "roc_auc": auc,
-    }
+    from sklearn.inspection import permutation_importance
+    oof,final,med,folds=fit_grouped(lab,features)
+    y=(lab["role"]=="positive").astype(int).to_numpy()
+    pi=permutation_importance(final,lab[features].fillna(med),y,n_repeats=10,
+                              random_state=42,scoring="roc_auc",n_jobs=1)
+    # Resubstitution diagnostic only, not held-out permutation importance.
+    return dict(scores=oof,y=y,valid_mask=np.isfinite(oof),n_splits=len(folds),
+                skipped_folds=0,roc_auc=float(roc_auc_score(y,oof)),
+                feature_importance=dict(zip(features,map(float,final.feature_importances_))),
+                permutation_importance=dict(zip(features,map(float,pi.importances_mean))))
 
 
 def max_fraction(values: dict) -> tuple[str | None, float]:
@@ -263,7 +198,7 @@ def main() -> int:
         f"- Positives: {int(runnable['n_positives'].max()) if not runnable.empty else 0}",
         f"- Best feature group by ROC-AUC: `{best['group'] if best is not None else 'none'}`",
         f"- `single_signal_hallucination_risk` present in any ablation: **{single_any}**",
-        "- Variance status: all metrics with 8 positives move in 12.5 percentage-point increments; treat as high-variance.",
+        "- Variance status: capture metrics with 8 positives move in 12.5 percentage-point increments; treat as high-variance.",
         "",
         "## Results",
         "",

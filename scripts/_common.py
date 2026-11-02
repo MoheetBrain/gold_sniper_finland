@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -37,7 +38,7 @@ def get_logger(name: str) -> logging.Logger:
 
 def load_config(config_path: str | Path | None = None) -> dict:
     """Load configs/config.yaml (or an explicit path) and fail loudly if missing."""
-    path = Path(config_path) if config_path else DEFAULT_CONFIG
+    path = Path(config_path or (os.environ.get("GEOARB_CONFIG") or DEFAULT_CONFIG))
     if not path.exists():
         raise FileNotFoundError(
             f"Config not found at {path}. Expected configs/config.yaml in the repo."
@@ -71,7 +72,10 @@ def import_script(module_file: str, name: str | None = None):
     scripts_dir = Path(__file__).resolve().parent
     spec = importlib.util.spec_from_file_location(
         name or Path(module_file).stem, scripts_dir / module_file)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load script: {module_file}")
     mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     return mod
 

@@ -69,8 +69,7 @@ def load_folder(folder: Path, crs: str) -> gpd.GeoDataFrame | None:
         if g.empty:
             continue
         if g.crs is None:
-            log.warning("%s has no CRS — assuming %s", f.name, crs)
-            g = g.set_crs(crs, allow_override=True)
+            raise ValueError("Source CRS missing; obtain metadata instead of assuming coordinates")
         g = g.to_crs(crs)
         g = g[g.geometry.notna() & ~g.geometry.is_empty]
         inv = ~g.geometry.is_valid

@@ -1,5 +1,5 @@
 """
-09 — Assign spatial blocks for leakage-free cross-validation.
+09 — Assign spatial blocks for spatially grouped cross-validation.
 
 WHY
     Random train/test splits leak spatial autocorrelation: a test cell 2 km from a
@@ -19,6 +19,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 from shapely.geometry import box
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -29,6 +30,8 @@ log = get_logger("09_blocks")
 
 def assign_blocks(grid: gpd.GeoDataFrame, block_m: float):
     """Add bx, by, spatial_block_id from centroid coords on a 20 km lattice."""
+    if not np.isfinite(block_m) or block_m <= 0:
+        raise ValueError("block_m must be finite and positive")
     grid = grid.copy()
     bx = (grid["centroid_x"] // block_m).astype(int)
     by = (grid["centroid_y"] // block_m).astype(int)

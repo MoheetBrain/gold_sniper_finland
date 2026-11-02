@@ -1,0 +1,572 @@
+{
+  "review_date": "2026-11-02",
+  "sources": [
+    {
+      "dataset": "Tukes active exploration permits",
+      "official_source": "Tukes",
+      "source_url": "https://tukes.fi/en/mining-ore-prospecting-and-gold-panning/map-files",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Tukes terms and copyright on source page",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Tukes exploration applications",
+      "official_source": "Tukes",
+      "source_url": "https://tukes.fi/en/mining-ore-prospecting-and-gold-panning/map-files",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Tukes terms and copyright on source page",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Tukes reservations",
+      "official_source": "Tukes",
+      "source_url": "https://tukes.fi/en/mining-ore-prospecting-and-gold-panning/map-files",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Tukes terms and copyright on source page",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Tukes reservation applications",
+      "official_source": "Tukes",
+      "source_url": "https://tukes.fi/en/mining-ore-prospecting-and-gold-panning/map-files",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Tukes terms and copyright on source page",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Tukes mining permits",
+      "official_source": "Tukes",
+      "source_url": "https://tukes.fi/en/mining-ore-prospecting-and-gold-panning/map-files",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Tukes terms and copyright on source page",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Tukes gold panning permits",
+      "official_source": "Tukes",
+      "source_url": "https://tukes.fi/en/mining-ore-prospecting-and-gold-panning/map-files",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Tukes terms and copyright on source page",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Tukes Karenssi/cooling-off/lapsed status",
+      "official_source": "Tukes",
+      "source_url": "https://tukes.fi/en/mining-ore-prospecting-and-gold-panning/map-files",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Tukes terms and copyright on source page",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK bedrock geology polygons",
+      "official_source": "GTK ArcGIS REST",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/GTK_Bedrock_and_Superficial_Geology/MapServer/3",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK lithology attributes",
+      "official_source": "GTK ArcGIS REST",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/GTK_Bedrock_and_Superficial_Geology/MapServer/3",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK stratigraphy/group attributes",
+      "official_source": "GTK ArcGIS REST",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/GTK_Bedrock_and_Superficial_Geology/MapServer/3",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Central Lapland Greenstone Belt boundary or derivable geology",
+      "official_source": "Derived from GTK bedrock",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/GTK_Bedrock_and_Superficial_Geology/MapServer/3",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Derived; inherits GTK source license",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK structures/faults/shear zones",
+      "official_source": "GTK ArcGIS REST",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/GTK_Bedrock_and_Superficial_Geology/MapServer/0",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Dykes if available",
+      "official_source": "GTK Hakku / GTK bedrock services",
+      "source_url": "https://hakku.gtk.fi",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify dataset terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Lithological contacts if available",
+      "official_source": "Derived from GTK bedrock",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/GTK_Bedrock_and_Superficial_Geology/MapServer/3",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Derived; inherits GTK source license",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK aeromagnetic TMI",
+      "official_source": "GTK Geophysics / Hakku",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/Geophysics/MapServer/63",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify raster terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Magnetic 1VD or raw TMI suitable for derivative calculation",
+      "official_source": "GTK Geophysics / Hakku",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/Geophysics/MapServer/63",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify raster terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Magnetic analytic signal if available",
+      "official_source": "GTK Geophysics / Hakku",
+      "source_url": "https://hakku.gtk.fi",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify dataset terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Magnetic tilt derivative if available",
+      "official_source": "Derived from magnetic TMI",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/Geophysics/MapServer/63",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Derived; inherits magnetic source license",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Bouguer gravity",
+      "official_source": "GTK Geophysics / Hakku",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/Geophysics/MapServer/58",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify raster terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Gravity gradient / upward continuation if available",
+      "official_source": "Derived from Bouguer gravity",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/Geophysics/MapServer/58",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Derived; inherits gravity source license",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Radiometric K, Th, U if available",
+      "official_source": "GTK Geophysics / Hakku",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/Geophysics/MapServer/72",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify raster terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "EM/electromagnetic data if publicly available",
+      "official_source": "GTK Geophysics / Hakku",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/Geophysics/MapServer/66",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify raster terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK till geochemistry Au",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/11",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK till As",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/52",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK till Sb",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/52",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK till Bi",
+      "official_source": "GTK Hakku / Maapera WFS",
+      "source_url": "https://hakku.gtk.fi",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify dataset terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK till Te",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/11",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK till W",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/52",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK till Cu",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/10",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK till Co",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/10",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK till Ni",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/10",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Detection limits / sample fraction / survey metadata",
+      "official_source": "GTK Maapera WFS / Hakku",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/10",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Stream sediment geochemistry if available",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/53",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Bedrock/lithogeochemistry if available",
+      "official_source": "GTK Hakku",
+      "source_url": "https://hakku.gtk.fi",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify dataset terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Surficial geology",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/48",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Till cover / drift thickness if available",
+      "official_source": "GTK Maapeitepaksuus / Hakku",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Maapeitepaksuus_1m/MapServer",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify raster terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Glacial flow indicators",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/31",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Drumlins",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/58",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Ribbed moraines",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/60",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Eskers",
+      "official_source": "GTK Maapera WFS",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Rajapinnat/GTK_Maapera_WFS/MapServer/60",
+      "historical_status": "downloaded",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Peat/bog/wetland polygons",
+      "official_source": "SYKE / NLS Finland",
+      "source_url": "https://www.syke.fi/en/open-information/open-data",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "DEM/elevation",
+      "official_source": "NLS Finland",
+      "source_url": "https://www.maanmittauslaitos.fi/en/e-services/open-data-file-download-service",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "NLS open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Slope",
+      "official_source": "Derived from DEM",
+      "source_url": "https://www.maanmittauslaitos.fi/en/e-services/open-data-file-download-service",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Derived; inherits DEM source license",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Water bodies",
+      "official_source": "NLS Finland / SYKE",
+      "source_url": "https://www.maanmittauslaitos.fi/en/e-services/open-data-file-download-service",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "GTK/FODD mineral deposit database",
+      "official_source": "GTK FODD",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Fodd/fodd_FDM_v5/MapServer/39",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Gold occurrences",
+      "official_source": "GTK FODD",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Fodd/fodd_FDM_v5/MapServer/39",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Orogenic gold labels",
+      "official_source": "Derived from GTK FODD",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Fodd/fodd_FDM_v5/MapServer/39",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Derived; inherits GTK source license",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Known mines",
+      "official_source": "GTK Mines and deposits",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/Mines_deposits/MapServer/5",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Historical prospects",
+      "official_source": "GTK FODD / Hakku",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/Fodd/fodd_FDM_v5/MapServer/39",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Drillholes if available",
+      "official_source": "GTK Hakku",
+      "source_url": "https://hakku.gtk.fi",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify dataset terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Historical exploration reports if downloadable",
+      "official_source": "GTK Hakku",
+      "source_url": "https://hakku.gtk.fi",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "GTK open data, verify report terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Natura 2000",
+      "official_source": "SYKE via GTK NatureETC",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/NatureETC/MapServer/1",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Protected areas",
+      "official_source": "SYKE via GTK NatureETC",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/NatureETC/MapServer/2",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Wilderness areas",
+      "official_source": "Metsahallitus / SYKE",
+      "source_url": "https://www.syke.fi/en/open-information/open-data",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Groundwater areas",
+      "official_source": "SYKE via GTK NatureETC",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/NatureETC/MapServer/0",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Water bodies",
+      "official_source": "NLS Finland / SYKE",
+      "source_url": "https://www.maanmittauslaitos.fi/en/e-services/open-data-file-download-service",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Roads",
+      "official_source": "Digiroad / NLS Finland",
+      "source_url": "https://vayla.fi/en/transport-network/data/digiroad/open-data",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Railways",
+      "official_source": "NLS Finland / Finnish Transport Infrastructure Agency",
+      "source_url": "https://www.maanmittauslaitos.fi/en/e-services/open-data-file-download-service",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Power lines if available",
+      "official_source": "Fingrid / NLS Finland",
+      "source_url": "https://data.fingrid.fi/en/",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Towns",
+      "official_source": "Statistics Finland / NLS Finland",
+      "source_url": "https://stat.fi/org/avoindata/paikkatietoaineistot_en.html",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Open data license; verify product-specific terms",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Kittila mine/mill location",
+      "official_source": "GTK Mines and deposits",
+      "source_url": "https://gtkdata.gtk.fi/arcgis/rest/services/MDaE/Mines_deposits/MapServer/5",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "GTK open data, CC BY 4.0",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Active company claims nearby",
+      "official_source": "Tukes",
+      "source_url": "https://tukes.fi/en/mining-ore-prospecting-and-gold-panning/map-files",
+      "historical_status": "already_exists",
+      "historical_licence_claim_unverified": "Tukes terms and copyright on source page",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    },
+    {
+      "dataset": "Distance-to-infrastructure layers",
+      "official_source": "Derived from roads/rail/power/towns",
+      "source_url": "https://vayla.fi/en/transport-network/data/digiroad/open-data",
+      "historical_status": "manual_required",
+      "historical_licence_claim_unverified": "Derived; inherits infrastructure source licenses",
+      "distributed": "metadata_only",
+      "redistribution_decision": "raw_and_target_data_excluded; verify product-specific terms before reacquisition/sharing"
+    }
+  ]
+}

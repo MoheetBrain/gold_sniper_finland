@@ -1,0 +1,112 @@
+{
+  "kind": "SYNTHETIC SOFTWARE DEMONSTRATION \u2014 not Finland validation",
+  "seed": 42,
+  "grid_cells": 900,
+  "evaluation_cells": 864,
+  "positives": 9,
+  "spatial_block_m": 20000,
+  "folds": 5,
+  "all_oof_finite": true,
+  "metrics": {
+    "xgboost": {
+      "roc_auc": 0.5574398960363873,
+      "average_precision": 0.02593117379820296,
+      "capture": {
+        "1": 0.0,
+        "5": 0.1111111111111111,
+        "10": 0.2222222222222222
+      },
+      "capture_tie_bounds": {
+        "1": {
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "boundary_tie_cells": 1
+        },
+        "5": {
+          "minimum": 0.1111111111111111,
+          "maximum": 0.1111111111111111,
+          "boundary_tie_cells": 1
+        },
+        "10": {
+          "minimum": 0.2222222222222222,
+          "maximum": 0.2222222222222222,
+          "boundary_tie_cells": 1
+        }
+      }
+    },
+    "distance_to_fault": {
+      "roc_auc": 0.623196881091618,
+      "average_precision": 0.021010902617702255,
+      "capture": {
+        "1": 0.0,
+        "5": 0.1111111111111111,
+        "10": 0.2222222222222222
+      },
+      "capture_tie_bounds": {
+        "1": {
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "boundary_tie_cells": 32
+        },
+        "5": {
+          "minimum": 0.0,
+          "maximum": 0.2222222222222222,
+          "boundary_tie_cells": 12
+        },
+        "10": {
+          "minimum": 0.2222222222222222,
+          "maximum": 0.2222222222222222,
+          "boundary_tie_cells": 10
+        }
+      }
+    },
+    "random_seed_42": {
+      "roc_auc": 0.39441195581546457,
+      "average_precision": 0.01404685443947425,
+      "capture": {
+        "1": 0.0,
+        "5": 0.1111111111111111,
+        "10": 0.1111111111111111
+      },
+      "capture_tie_bounds": {
+        "1": {
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "boundary_tie_cells": 1
+        },
+        "5": {
+          "minimum": 0.1111111111111111,
+          "maximum": 0.1111111111111111,
+          "boundary_tie_cells": 1
+        },
+        "10": {
+          "minimum": 0.1111111111111111,
+          "maximum": 0.1111111111111111,
+          "boundary_tie_cells": 1
+        }
+      }
+    }
+  },
+  "ablations": {
+    "structure_only": {
+      "roc_auc": 0.5463287849252763,
+      "top5_capture": 0.1111111111111111
+    },
+    "gravity_only": {
+      "roc_auc": 0.681351526965562,
+      "top5_capture": 0.1111111111111111
+    }
+  },
+  "mc_iterations": 500,
+  "mc_candidates": 16,
+  "random_auc_5_50_95pct": [
+    0.3548602988953866,
+    0.4949317738791423,
+    0.6643599740090966
+  ],
+  "random_top5_5_50_95pct": [
+    0.0,
+    0.0,
+    0.2222222222222222
+  ]
+}
